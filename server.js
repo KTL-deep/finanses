@@ -108,6 +108,49 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
+// Automated Webhook for T-Bank notifications (SMS/Push/Telegram Bot)
+app.post('/api/webhooks/tbank', (req, res) => {
+  try {
+    const { text, month } = req.body;
+    if (!text) return res.status(400).json({ error: 'Text payload is required' });
+    
+    const amountMatch = text.match(/(\d[\d\s]*([.,]\d+)?)\s*(₽|руб|rub)?/i);
+    const amount = amountMatch ? Math.abs(parseFloat(amountMatch[1].replace(/\s+/g, '').replace(',', '.'))) : 0;
+    
+    const nameMatch = text.match(/(?:оплата|покупка|в)\s+([^0-9\n,.]+)/i);
+    const storeName = nameMatch ? nameMatch[1].trim() : 'Покупка Т-Банк';
+    
+    const now = new Date();
+    const targetMonth = month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
+    const stmt = db.prepare('SELECT state FROM monthly_plans WHERE month = ?');
+    const row = stmt.get(targetMonth);
+    let state = row ? JSON.parse(row.state) : {};
+    
+    if (!state.groceries) state.groceries = [];
+    const newEntry = {
+      id: Date.now(),
+      name: storeName,
+      amount: amount,
+      done: true,
+      date: now.toLocaleDateString('ru-RU')
+    };
+    state.groceries.push(newEntry);
+    
+    const updateStmt = db.prepare(`
+      INSERT INTO monthly_plans (month, state, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(month) DO UPDATE SET state = excluded.state, updated_at = excluded.updated_at
+    `);
+    updateStmt.run(targetMonth, JSON.stringify(state), now.toISOString());
+    
+    res.json({ success: true, month: targetMonth, added: newEntry });
+  } catch (err) {
+    console.error('T-Bank Webhook error:', err);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Financial Architecture App running on http://0.0.0.0:${PORT}`);
 });
