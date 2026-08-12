@@ -343,6 +343,12 @@
         .priority-badge.high { background: #fef2f2; color: var(--accent); }
         .priority-badge.medium { background: #fff8e6; color: #b06000; }
         .priority-badge.low { background: #e6f4ea; color: #137333; }
+        .item-pin-btn {
+            background: transparent; border: none; font-size: 1.1rem;
+            cursor: pointer; padding: 0 0.3rem; opacity: 0.3; transition: var(--transition);
+        }
+        .item-pin-btn:hover { opacity: 0.8; transform: scale(1.15); }
+        .item-pin-btn.active { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
         .clickable-card { cursor: pointer; transition: var(--transition); }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: var(--text); }
     </style>
@@ -890,14 +896,14 @@
     <script>
         // Default Mandatory Groceries Template
         const defaultGroceriesTemplate = [
-            { id: 'def_1', name: '🏋️ Зал', amount: 6000, done: false, isTemplate: true },
-            { id: 'def_2', name: '☕ Кофе', amount: 5000, done: false, isTemplate: true },
-            { id: 'def_3', name: '🐶 Корм Арии', amount: 3500, done: false, isTemplate: true },
-            { id: 'def_4', name: '🌐 Интернет', amount: 1150, done: false, isTemplate: true },
-            { id: 'def_5', name: '📱 Телефон', amount: 1500, done: false, isTemplate: true },
-            { id: 'def_6', name: '🤖 Гемини', amount: 2000, done: false, isTemplate: true },
-            { id: 'def_7', name: '⛽ Бензин', amount: 6000, done: false, isTemplate: true },
-            { id: 'def_8', name: '💊 Протеин и креатин', amount: 2500, done: false, isTemplate: true }
+            { id: 'def_1', name: 'Зал', amount: 6000, done: false, pinned: true },
+            { id: 'def_2', name: 'Кофе', amount: 5000, done: false, pinned: true },
+            { id: 'def_3', name: 'Корм Арии', amount: 3500, done: false, pinned: true },
+            { id: 'def_4', name: 'Интернет', amount: 1150, done: false, pinned: true },
+            { id: 'def_5', name: 'Телефон', amount: 1500, done: false, pinned: true },
+            { id: 'def_6', name: 'Гемини', amount: 2000, done: false, pinned: true },
+            { id: 'def_7', name: 'Бензин', amount: 6000, done: false, pinned: true },
+            { id: 'def_8', name: 'Протеин и креатин', amount: 2500, done: false, pinned: true }
         ];
 
         // State Management
@@ -921,6 +927,16 @@
 
         const fmt = (num) => Math.round(num || 0).toLocaleString('ru-RU') + ' ₽';
         const fmtBig = (num) => Math.round(num || 0).toLocaleString('ru-RU');
+
+        function parseDateVal(item) {
+            if (item.date) {
+                const parts = item.date.split('.');
+                if (parts.length === 3) {
+                    return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+                }
+            }
+            return typeof item.id === 'number' ? item.id : (parseInt(item.id) || 0);
+        }
 
         function updateSyncBadge(status) {
             const badge = document.getElementById('sync-badge');
@@ -963,17 +979,13 @@
                 });
             }
 
-            // 1. GROCERIES:
-            // Mandatory template items (reset done: false)
-            const baseTemplateNames = defaultGroceriesTemplate.map(t => t.name.toLowerCase());
-            const newGroceries = JSON.parse(JSON.stringify(defaultGroceriesTemplate));
-            
-            // Manual items from previous month (NOT from T-Bank and NOT in default template)
+            // 1. GROCERIES: ONLY PINNED items carry forward to the new month!
+            const newGroceries = [];
             (prevState.groceries || []).forEach(item => {
-                if (!item.fromTBank && !baseTemplateNames.includes((item.name || '').toLowerCase())) {
+                if (item.pinned) {
                     newGroceries.push({
                         ...item,
-                        id: Date.now() + Math.random(),
+                        id: 'pin_' + Date.now() + Math.random().toString(36).substr(2, 4),
                         done: false,
                         date: ''
                     });
@@ -981,8 +993,13 @@
             });
             newState.groceries = newGroceries;
 
-            // 2. WANTS (Хотелки): Only unclosed (done === false) items carry forward!
-            newState.wants = (prevState.wants || []).filter(item => !item.done);
+            // 2. WANTS (Хотелки): Only unclosed (done === false) items carry forward to the next month!
+            newState.wants = (prevState.wants || [])
+                .filter(item => !item.done)
+                .map(item => ({
+                    ...item,
+                    id: 'w_' + Date.now() + Math.random().toString(36).substr(2, 4)
+                }));
 
             // 3. UNPLANNED (Внеплановые): Reset to empty array for new month!
             newState.unplanned = [];
@@ -1318,11 +1335,22 @@
                 return;
             }
             
-            // Unchecked (done: false) items stay ABOVE completed ones
+            // Unchecked (done: false) items stay ABOVE completed ones.
+            // Completed (done: true) items are sorted so oldest are at the very bottom.
             const sortedGroceries = appState.groceries.slice().sort((a, b) => {
                 const aDone = a.done ? 1 : 0;
                 const bDone = b.done ? 1 : 0;
-                return aDone - bDone;
+                if (aDone !== bDone) return aDone - bDone;
+
+                if (!a.done && !b.done) {
+                    const aPin = a.pinned ? 0 : 1;
+                    const bPin = b.pinned ? 0 : 1;
+                    return aPin - bPin;
+                }
+
+                const tA = parseDateVal(a);
+                const tB = parseDateVal(b);
+                return tB - tA; // Newest completed at top of completed block, oldest at the very bottom
             });
 
             sortedGroceries.forEach(item => {
@@ -1330,15 +1358,21 @@
                 div.className = `item-row ${item.done ? 'done' : ''}`;
                 div.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 0.8rem;">
-                        <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleGroceryItem(${item.id})">
+                        <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleGroceryItem('${item.id}')">
                         <div>
-                            <div class="item-title">${item.name}</div>
+                            <div class="item-title" style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span>${item.name}</span>
+                                ${item.pinned ? '<span style="font-size: 0.8rem;" title="Закреплено для ежемесячного переноса">📌</span>' : ''}
+                            </div>
                             <div class="item-meta">${item.date || ''}</div>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <button class="item-pin-btn ${item.pinned ? 'active' : ''}" onclick="togglePinGrocery('${item.id}')" title="${item.pinned ? 'Открепить (не переносить на следующий месяц)' : 'Закрепить (переносить каждый месяц)'}">
+                            📌
+                        </button>
                         <div class="item-amount">${fmt(item.amount)}</div>
-                        <button class="item-delete-btn" onclick="deleteGroceryItem(${item.id})" title="Удалить">&times;</button>
+                        <button class="item-delete-btn" onclick="deleteGroceryItem('${item.id}')" title="Удалить">&times;</button>
                     </div>
                 `;
                 listEl.appendChild(div);
@@ -1373,7 +1407,7 @@
 
         function toggleGroceryItem(id) {
             if (!appState.groceries) return;
-            const item = appState.groceries.find(i => i.id === id);
+            const item = appState.groceries.find(i => String(i.id) === String(id));
             if (item) {
                 item.done = !item.done;
                 savePlan();
@@ -1381,9 +1415,19 @@
             }
         }
 
+        function togglePinGrocery(id) {
+            if (!appState.groceries) return;
+            const item = appState.groceries.find(i => String(i.id) === String(id));
+            if (item) {
+                item.pinned = !item.pinned;
+                savePlan();
+                renderDashboard();
+            }
+        }
+
         function deleteGroceryItem(id) {
             if (!appState.groceries) return;
-            appState.groceries = appState.groceries.filter(i => i.id !== id);
+            appState.groceries = appState.groceries.filter(i => String(i.id) !== String(id));
             savePlan();
             renderDashboard();
         }
@@ -1442,12 +1486,20 @@
             }
             
             // Unchecked (done: false) items stay ABOVE completed ones
+            // Completed (done: true) items are sorted so oldest are at the very bottom.
             const sortedWants = appState.wants.slice().sort((a, b) => {
                 const aDone = a.done ? 1 : 0;
                 const bDone = b.done ? 1 : 0;
                 if (aDone !== bDone) return aDone - bDone;
-                const pRank = { 'Высокий': 1, 'Средний': 2, 'Обычный': 3 };
-                return (pRank[a.priority] || 3) - (pRank[b.priority] || 3);
+
+                if (!a.done && !b.done) {
+                    const pRank = { 'Высокий': 1, 'Средний': 2, 'Обычный': 3 };
+                    return (pRank[a.priority] || 3) - (pRank[b.priority] || 3);
+                }
+
+                const tA = parseDateVal(a);
+                const tB = parseDateVal(b);
+                return tB - tA; // Newest completed at top of completed block, oldest at the very bottom
             });
 
             sortedWants.forEach(item => {
@@ -1460,7 +1512,7 @@
                 div.className = `item-row ${item.done ? 'done' : ''}`;
                 div.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 0.8rem;">
-                        <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleWantsItem(${item.id})">
+                        <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleWantsItem('${item.id}')">
                         <div>
                             <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem;">
                                 <span>${item.name}</span>
@@ -1471,7 +1523,7 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <div class="item-amount">${fmt(item.amount)}</div>
-                        <button class="item-delete-btn" onclick="deleteWantsItem(${item.id})" title="Удалить">&times;</button>
+                        <button class="item-delete-btn" onclick="deleteWantsItem('${item.id}')" title="Удалить">&times;</button>
                     </div>
                 `;
                 listEl.appendChild(div);
@@ -1507,7 +1559,7 @@
 
         function toggleWantsItem(id) {
             if (!appState.wants) return;
-            const item = appState.wants.find(i => i.id === id);
+            const item = appState.wants.find(i => String(i.id) === String(id));
             if (item) {
                 item.done = !item.done;
                 savePlan();
@@ -1517,7 +1569,7 @@
 
         function deleteWantsItem(id) {
             if (!appState.wants) return;
-            appState.wants = appState.wants.filter(i => i.id !== id);
+            appState.wants = appState.wants.filter(i => String(i.id) !== String(id));
             savePlan();
             renderDashboard();
         }
@@ -1594,7 +1646,7 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <div class="item-amount" style="color: var(--accent);">${fmt(item.amount)}</div>
-                        <button class="item-delete-btn" onclick="deleteUnplannedItem(${item.id})" title="Удалить">&times;</button>
+                        <button class="item-delete-btn" onclick="deleteUnplannedItem('${item.id}')" title="Удалить">&times;</button>
                     </div>
                 `;
                 listEl.appendChild(div);
@@ -1630,7 +1682,7 @@
 
         function deleteUnplannedItem(id) {
             if (!appState.unplanned) return;
-            appState.unplanned = appState.unplanned.filter(i => i.id !== id);
+            appState.unplanned = appState.unplanned.filter(i => String(i.id) !== String(id));
             savePlan();
             renderDashboard();
         }
