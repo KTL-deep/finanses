@@ -242,16 +242,37 @@
             .span-3, .span-4, .span-6, .span-8 { grid-column: span 6; } 
         }
         @media(max-width: 768px) { 
+            body { padding: 0.75rem; }
+            .dashboard { gap: 1rem; }
             .span-4, .span-6, .span-8 { grid-column: span 12; } 
             .span-3 { grid-column: span 6; }
-            header { flex-direction: column; align-items: flex-start; gap: 1.25rem; } 
-            .hero-title { font-size: 2.2rem; } 
-            body { padding: 1rem; } 
-            .modal-body { grid-template-columns: 1fr; padding: 1.25rem; gap: 1.5rem; }
+            header { flex-direction: column; align-items: stretch; gap: 1rem; padding: 1.25rem; } 
+            header > div:last-child { width: 100%; display: flex; gap: 0.5rem; justify-content: space-between; }
+            header > div:last-child button { flex: 1; text-align: center; justify-content: center; padding: 0.65rem 0.5rem; font-size: 0.8rem; }
+            .hero-title { font-size: 2.1rem; }
+            .month-picker-container { flex-wrap: wrap; }
+            .modal-content { max-height: 95vh; margin: 0.5rem; border-radius: 20px; }
+            .modal-body { grid-template-columns: 1fr; padding: 1.25rem; gap: 1.25rem; }
+            .modal-header { padding: 1.25rem 1.5rem; }
+            .modal-footer { padding: 1rem 1.5rem; }
+            .nav-bar { 
+                overflow-x: auto; 
+                flex-wrap: nowrap; 
+                -webkit-overflow-scrolling: touch; 
+                padding-bottom: 0.6rem;
+                margin-bottom: 0.75rem;
+            }
+            .nav-tab { white-space: nowrap; flex-shrink: 0; padding: 0.6rem 1.1rem; }
+            .item-row { padding: 0.75rem 0.85rem; }
+            .item-title { font-size: 0.9rem; word-break: break-word; }
+            .input-group { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .flex-inputs { width: 100%; }
         }
         @media(max-width: 480px) {
             .span-3 { grid-column: span 12; }
-            .stat-value { font-size: 2.5rem; }
+            .stat-value { font-size: 2.2rem; }
+            .dist-val { font-size: 1.5rem; }
+            .hero-title { font-size: 1.8rem; }
         }
 
         /* TAB NAVIGATION STYLES */
