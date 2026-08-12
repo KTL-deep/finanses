@@ -1,0 +1,6 @@
+sandbox/
+.idea/
+.vscode/
+*.env
+node_modules/
+dist/

@@ -1,0 +1,12 @@
+services:
+  finance-app:
+    build: .
+    container_name: family-finance-app
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
