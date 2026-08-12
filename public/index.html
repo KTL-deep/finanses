@@ -373,6 +373,21 @@
         }
         .item-pin-btn:hover { opacity: 0.8; transform: scale(1.15); }
         .item-pin-btn.active { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+        .secret-amp {
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
+            display: inline-block;
+            padding: 0 0.15rem;
+        }
+        .secret-amp:hover {
+            color: var(--accent);
+            transform: scale(1.2);
+        }
+        .secret-amp.active-admin {
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(147, 23, 23, 0.4);
+        }
         .clickable-card { cursor: pointer; transition: var(--transition); }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: var(--text); }
     </style>
@@ -382,7 +397,7 @@
     <div class="dashboard">
         <header>
             <div>
-                <div class="hero-title">Timur & Lera</div>
+                <div class="hero-title">Timur <span id="secret-amp" class="secret-amp" onclick="toggleSecretMode()" title="Timur & Lera">&</span> Lera</div>
                 <div class="hero-subtitle">Двухфазная архитектура семейного бюджета</div>
                 
                 <div class="month-picker-container">
@@ -449,7 +464,7 @@
                         <span class="value" id="phase1-comm">0 ₽</span>
                     </div>
                     <div class="phase-row">
-                        <span class="label">2. Цели (Доля 2/3)</span>
+                        <span class="label">2. Цели</span>
                         <span class="value highlight" id="phase1-goals">0 ₽</span>
                     </div>
 
@@ -480,7 +495,7 @@
                         <span class="value" id="phase2-rent">0 ₽</span>
                     </div>
                     <div class="phase-row">
-                        <span class="label">2. Цели (Доля 1/3)</span>
+                        <span class="label">2. Цели</span>
                         <span class="value highlight" id="phase2-goals">0 ₽</span>
                     </div>
 
@@ -547,7 +562,7 @@
             <div class="span-6 card">
                 <div class="card-title">
                     <span>Финансовые цели</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">(Разбиение 2/3 Аванс / 1/3 ЗП)</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">(Пропорциональный расчёт)</span>
                 </div>
                 <div id="goals-view-list" style="overflow-y: auto; max-height: 300px; padding-right: 0.5rem;">
                     <!-- Goals rendered here -->
@@ -839,7 +854,7 @@
                         <button class="btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.7rem; border-radius: 8px;" onclick="addGoal()">+ Добавить цель</button>
                     </div>
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0; margin-bottom: 1.5rem; line-height: 1.4; font-weight: 500;">
-                        Ежемесячный платеж по целям автоматически делится: <strong>2/3 списывается из Аванса</strong> и <strong>1/3 из Зарплаты</strong>.
+                        Ежемесячный платеж по целям автоматически делится <strong>пропорционально чистому доходу Аванса и Зарплаты</strong>.
                     </p>
                     
                     <div id="modal-goals-container" style="flex: 1; overflow-y: auto; padding-right: 0.5rem; margin-right: -0.5rem;">
@@ -1033,8 +1048,8 @@
             incomes: { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000, extraAdv: 0, extraSal: 0 },
             fixed: { comm: 8000, rent: 32000 },
             goals: [
-                { id: 1, name: 'Кольцо', target: 250000, months: 12, saved: 0 },
-                { id: 2, name: 'Отпуск', target: 500000, months: 12, saved: 0 }
+                { id: 1, name: 'Кольцо', target: 250000, months: 12, saved: 0, isSecret: true },
+                { id: 2, name: 'Отпуск', target: 500000, months: 12, saved: 0, isSecret: false }
             ],
             distPct: { groc: 55, wants: 20, unplan: 10, save: 15 },
             groceries: JSON.parse(JSON.stringify(defaultGroceriesTemplate)),
@@ -1046,6 +1061,7 @@
         let chartInst = null;
         let historyChartInst = null;
         let currentDate = new Date();
+        let isAdminMode = localStorage.getItem('fin_admin_mode') === 'true';
 
         const fmt = (num) => Math.round(num || 0).toLocaleString('ru-RU') + ' ₽';
         const fmtBig = (num) => Math.round(num || 0).toLocaleString('ru-RU');
@@ -1154,6 +1170,19 @@
             });
         }
 
+        function sanitizeState(state) {
+            if (!state || typeof state !== 'object') return JSON.parse(JSON.stringify(defaultState));
+            return {
+                incomes: { ...defaultState.incomes, ...(state.incomes || {}) },
+                fixed: { ...defaultState.fixed, ...(state.fixed || {}) },
+                goals: Array.isArray(state.goals) ? state.goals : defaultState.goals,
+                distPct: { ...defaultState.distPct, ...(state.distPct || {}) },
+                groceries: Array.isArray(state.groceries) ? state.groceries : JSON.parse(JSON.stringify(defaultGroceriesTemplate)),
+                wants: Array.isArray(state.wants) ? state.wants : [],
+                unplanned: Array.isArray(state.unplanned) ? state.unplanned : []
+            };
+        }
+
         async function loadPlan() {
             const monthKey = getMonthKey(currentDate);
             updateSyncBadge('saving');
@@ -1162,7 +1191,7 @@
                 const res = await fetch(`/api/plans/${monthKey}`);
                 if (res.ok) {
                     const data = await res.json();
-                    appState = data.state;
+                    appState = sanitizeState(data.state);
                     updateSyncBadge('synced');
                 } else if (res.status === 404) {
                     const prevKey = getPrevMonthKey(monthKey);
@@ -1170,15 +1199,15 @@
                     
                     if (prevRes.ok) {
                         const prevData = await prevRes.json();
-                        appState = inheritFromPreviousMonth(prevData.state);
+                        appState = inheritFromPreviousMonth(sanitizeState(prevData.state));
                     } else {
                         const localPrev = localStorage.getItem(`plan_${prevKey}`);
                         if (localPrev) {
-                            appState = inheritFromPreviousMonth(JSON.parse(localPrev));
+                            appState = inheritFromPreviousMonth(sanitizeState(JSON.parse(localPrev)));
                         } else {
                             const localCurrent = localStorage.getItem(`plan_${monthKey}`);
                             if (localCurrent) {
-                                appState = JSON.parse(localCurrent);
+                                appState = sanitizeState(JSON.parse(localCurrent));
                             } else {
                                 appState = JSON.parse(JSON.stringify(defaultState));
                             }
@@ -1190,7 +1219,11 @@
                 console.warn("Backend offline, using localStorage", err);
                 const localCurrent = localStorage.getItem(`plan_${monthKey}`);
                 if (localCurrent) {
-                    appState = JSON.parse(localCurrent);
+                    try {
+                        appState = sanitizeState(JSON.parse(localCurrent));
+                    } catch(e) {
+                        appState = JSON.parse(JSON.stringify(defaultState));
+                    }
                 } else {
                     appState = JSON.parse(JSON.stringify(defaultState));
                 }
@@ -1199,7 +1232,15 @@
 
             ensureDefaultGroceries();
             populateModalFromState();
-            renderDashboard();
+            
+            try {
+                renderDashboard();
+            } catch(err) {
+                console.error("Render dashboard error, resetting to default state", err);
+                appState = JSON.parse(JSON.stringify(defaultState));
+                populateModalFromState();
+                renderDashboard();
+            }
         }
 
         async function savePlan() {
@@ -1253,6 +1294,9 @@
             // Dynamic Ratio Coefficient based on Net Cash Flows (Income - Mandatory Bills)
             const { rAdv, rSal } = calcGoalsRatio(incAdv, comm, incSal, rent);
 
+            // Filter goals: hide secret goals unless admin mode is unlocked via &
+            const activeGoals = (appState.goals || []).filter(g => isAdminMode || !g.isSecret);
+
             // Goals calculation
             let totalMonthlyGoals = 0;
             let goalsAdvTotal = 0;
@@ -1261,11 +1305,11 @@
             const goalsListEl = document.getElementById('goals-view-list');
             goalsListEl.innerHTML = '';
             
-            if (!appState.goals || appState.goals.length === 0) {
+            if (activeGoals.length === 0) {
                 document.getElementById('no-goals-msg').style.display = 'block';
             } else {
                 document.getElementById('no-goals-msg').style.display = 'none';
-                appState.goals.forEach(goal => {
+                activeGoals.forEach(goal => {
                     const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
                     const monthly = Math.round(rawMonthly / 100) * 100;
                     
@@ -1286,7 +1330,10 @@
                     div.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div class="goal-info">
-                                <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800;">${goal.name}</h4>
+                                <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>${goal.name}</span>
+                                    ${goal.isSecret ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
+                                </h4>
                                 <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.</p>
                                 <div class="goal-split-badges" style="margin-top: 0.3rem;">
                                     <span class="split-badge">Аванс: ${fmt(advShare)}</span>
@@ -1305,10 +1352,6 @@
                     goalsListEl.appendChild(div);
                 });
             }
-
-            // Fixed Expenses
-            const comm = appState.fixed.comm || 0;
-            const rent = appState.fixed.rent || 0;
 
             // Phase 1 (Advance) Calculations
             const phase1Deductions = comm + goalsAdvTotal;
@@ -1891,6 +1934,27 @@
             appState.distPct.save = parseFloat(document.getElementById('in-pct-save').value) || 0;
         }
 
+        function toggleSecretMode() {
+            isAdminMode = !isAdminMode;
+            localStorage.setItem('fin_admin_mode', isAdminMode ? 'true' : 'false');
+            updateSecretAmpUI();
+            renderDashboard();
+            if (document.getElementById('settingsModal').classList.contains('active')) {
+                renderModalGoals();
+            }
+        }
+
+        function updateSecretAmpUI() {
+            const amp = document.getElementById('secret-amp');
+            if (amp) {
+                if (isAdminMode) {
+                    amp.classList.add('active-admin');
+                } else {
+                    amp.classList.remove('active-admin');
+                }
+            }
+        }
+
         function triggerUpdate() {
             const p1 = parseFloat(document.getElementById('in-pct-groc').value) || 0;
             const p2 = parseFloat(document.getElementById('in-pct-wants').value) || 0;
@@ -1944,6 +2008,8 @@
             const container = document.getElementById('modal-goals-container');
             container.innerHTML = '';
             appState.goals.forEach((goal, index) => {
+                if (!isAdminMode && goal.isSecret) return;
+
                 const card = document.createElement('div');
                 card.className = 'goal-edit-card';
                 card.innerHTML = `
@@ -1959,9 +2025,21 @@
                             <input type="number" style="width: 100%; text-align: left;" value="${goal.months}" oninput="updateGoal(${index}, 'months', this.value)">
                         </div>
                     </div>
+                    ${isAdminMode ? `
+                    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); cursor: pointer; margin-top: 0.6rem;">
+                        <input type="checkbox" ${goal.isSecret ? 'checked' : ''} onchange="toggleGoalSecret(${index}, this.checked)">
+                        🔒 Скрытая цель (видимость по клику на &)
+                    </label>` : ''}
                 `;
                 container.appendChild(card);
             });
+        }
+
+        function toggleGoalSecret(index, isSecret) {
+            if (appState.goals[index]) {
+                appState.goals[index].isSecret = isSecret;
+                triggerUpdate();
+            }
         }
 
         function addGoal() {
@@ -2340,6 +2418,7 @@
 
         // Initialize on Load
         window.onload = () => {
+            updateSecretAmpUI();
             updateMonthDisplay();
             loadPlan();
         };
