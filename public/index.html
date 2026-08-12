@@ -253,6 +253,98 @@
             .span-3 { grid-column: span 12; }
             .stat-value { font-size: 2.5rem; }
         }
+
+        /* TAB NAVIGATION STYLES */
+        .nav-bar {
+            grid-column: span 12;
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .nav-tab {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            padding: 0.65rem 1.4rem;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .nav-tab:hover { color: var(--text); border-color: var(--text); transform: translateY(-2px); }
+        .nav-tab.active {
+            background: var(--text);
+            color: var(--surface);
+            border-color: var(--text);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .tab-badge {
+            background: var(--bg);
+            color: var(--text);
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+        .nav-tab.active .tab-badge {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* ITEM ROW STYLING FOR PURCHASES AND WISHLIST */
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 0.75rem;
+            transition: var(--transition);
+        }
+        .item-row:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border-color: var(--text-muted);
+        }
+        .item-row.done {
+            opacity: 0.65;
+            background: #f8f9fa;
+        }
+        .item-row.done .item-title {
+            text-decoration: line-through;
+        }
+        .item-checkbox {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+        .item-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.2rem; }
+        .item-meta { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+        .item-amount { font-size: 1.1rem; font-weight: 900; color: var(--text); text-align: right; }
+        .item-delete-btn {
+            background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem;
+            cursor: pointer; padding: 0 0.4rem; font-weight: bold; transition: var(--transition);
+        }
+        .item-delete-btn:hover { color: var(--accent); }
+        .priority-badge {
+            font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; text-transform: uppercase;
+        }
+        .priority-badge.high { background: #fef2f2; color: var(--accent); }
+        .priority-badge.medium { background: #fff8e6; color: #b06000; }
+        .priority-badge.low { background: #e6f4ea; color: #137333; }
+        .clickable-card { cursor: pointer; transition: var(--transition); }
+        .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: var(--text); }
     </style>
 </head>
 <body>
@@ -280,144 +372,329 @@
             </div>
         </header>
 
-        <!-- TOP STATS SUMMARY -->
-        <div class="span-4 stat-group">
-            <div class="stat-block">
-                <div class="stat-value" id="view-total-inc">0</div>
-                <div class="stat-label">Общий доход семьи</div>
+        <!-- TAB NAVIGATION -->
+        <nav class="nav-bar">
+            <button class="nav-tab active" id="tab-btn-dashboard" onclick="switchTab('dashboard')">📊 Главный план</button>
+            <button class="nav-tab" id="tab-btn-groceries" onclick="switchTab('groceries')">🛒 Продукты <span class="tab-badge" id="tab-badge-groc">0 ₽</span></button>
+            <button class="nav-tab" id="tab-btn-wants" onclick="switchTab('wants')">🎁 Хотелки <span class="tab-badge" id="tab-badge-wants">0 ₽</span></button>
+            <button class="nav-tab" id="tab-btn-unplanned" onclick="switchTab('unplanned')">⚡ Внеплановые <span class="tab-badge" id="tab-badge-unplan">0 ₽</span></button>
+        </nav>
+
+        <!-- VIEW 1: MAIN DASHBOARD -->
+        <div id="view-dashboard" class="tab-view" style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; grid-column: span 12;">
+            <!-- TOP STATS SUMMARY -->
+            <div class="span-4 stat-group">
+                <div class="stat-block">
+                    <div class="stat-value" id="view-total-inc">0</div>
+                    <div class="stat-label">Общий доход семьи</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-value" id="view-total-fix">0</div>
+                    <div class="stat-label">Обязательные + Цели</div>
+                </div>
+                <div class="stat-block accent">
+                    <div class="stat-value" id="view-total-free">0</div>
+                    <div class="stat-label">Итого свободный бюджет</div>
+                </div>
             </div>
-            <div class="stat-block">
-                <div class="stat-value" id="view-total-fix">0</div>
-                <div class="stat-label">Обязательные + Цели</div>
+
+            <!-- 2 PHASES DETAILED CARDS (ADVANCE VS SALARY) -->
+            <div class="span-8" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <!-- PHASE 1: ADVANCE -->
+                <div class="card">
+                    <div class="phase-header">
+                        <div class="phase-title">
+                            <span>Фаза 1: Аванс</span>
+                        </div>
+                        <span class="phase-pill" id="phase1-total-badge">127 000 ₽</span>
+                    </div>
+
+                    <div class="phase-row">
+                        <span class="label">Доход (Тимур + Лера)</span>
+                        <span class="value" id="phase1-inc">0 ₽</span>
+                    </div>
+                    <div class="phase-row">
+                        <span class="label">1. Коммуналка</span>
+                        <span class="value" id="phase1-comm">0 ₽</span>
+                    </div>
+                    <div class="phase-row">
+                        <span class="label">2. Цели (Доля 2/3)</span>
+                        <span class="value highlight" id="phase1-goals">0 ₽</span>
+                    </div>
+
+                    <div class="phase-residual-box">
+                        <div>
+                            <div class="stat-label" style="font-size: 0.65rem;">Остаток на свободные траты</div>
+                            <div class="phase-residual-val" id="phase1-free">0 ₽</div>
+                        </div>
+                        <span class="badge">Начало месяца</span>
+                    </div>
+                </div>
+
+                <!-- PHASE 2: SALARY -->
+                <div class="card">
+                    <div class="phase-header">
+                        <div class="phase-title">
+                            <span>Фаза 2: Зарплата</span>
+                        </div>
+                        <span class="phase-pill accent" id="phase2-total-badge">78 000 ₽</span>
+                    </div>
+
+                    <div class="phase-row">
+                        <span class="label">Доход (Тимур + Лера)</span>
+                        <span class="value" id="phase2-inc">0 ₽</span>
+                    </div>
+                    <div class="phase-row">
+                        <span class="label">1. Аренда квартиры</span>
+                        <span class="value" id="phase2-rent">0 ₽</span>
+                    </div>
+                    <div class="phase-row">
+                        <span class="label">2. Цели (Доля 1/3)</span>
+                        <span class="value highlight" id="phase2-goals">0 ₽</span>
+                    </div>
+
+                    <div class="phase-residual-box">
+                        <div>
+                            <div class="stat-label" style="font-size: 0.65rem;">Остаток на свободные траты</div>
+                            <div class="phase-residual-val" id="phase2-free">0 ₽</div>
+                        </div>
+                        <span class="badge">Середина месяца</span>
+                    </div>
+                </div>
             </div>
-            <div class="stat-block accent">
-                <div class="stat-value" id="view-total-free">0</div>
-                <div class="stat-label">Итого свободный бюджет</div>
+
+            <!-- FULL MONTH COMBINED DISTRIBUTION -->
+            <div class="span-12" style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;">Сводное распределение остатка</h3>
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent);" id="dist-warning"></div>
+            </div>
+
+            <div class="dist-card span-3 clickable-card" onclick="switchTab('groceries')" title="Перейти к детализации продуктов">
+                <div class="dist-header">
+                    <span class="stat-label">Продукты 🛒</span>
+                    <span class="badge" id="view-pct-groc">55%</span>
+                </div>
+                <div class="dist-val" id="view-val-groc">0</div>
+                <div class="dist-sub" id="sub-groc">Аванс: 0 ₽ | ЗП: 0 ₽</div>
+                <div style="font-size: 0.75rem; font-weight: 800; color: var(--accent); margin-top: 0.5rem;">Открыть список ➔</div>
+            </div>
+            <div class="dist-card span-3 clickable-card" onclick="switchTab('wants')" title="Перейти к wish-листу">
+                <div class="dist-header">
+                    <span class="stat-label">Хотелки 🎁</span>
+                    <span class="badge" id="view-pct-wants">20%</span>
+                </div>
+                <div class="dist-val" id="view-val-wants">0</div>
+                <div class="dist-sub" id="sub-wants">Аванс: 0 ₽ | ЗП: 0 ₽</div>
+                <div style="font-size: 0.75rem; font-weight: 800; color: var(--accent); margin-top: 0.5rem;">Wish-лист ➔</div>
+            </div>
+            <div class="dist-card span-3 clickable-card" onclick="switchTab('unplanned')" title="Перейти к журналу внеплановых трат">
+                <div class="dist-header">
+                    <span class="stat-label">Внеплановые ⚡</span>
+                    <span class="badge" id="view-pct-unplan">10%</span>
+                </div>
+                <div class="dist-val" id="view-val-unplan">0</div>
+                <div class="dist-sub" id="sub-unplan">Аванс: 0 ₽ | ЗП: 0 ₽</div>
+                <div style="font-size: 0.75rem; font-weight: 800; color: var(--accent); margin-top: 0.5rem;">Открыть журнал ➔</div>
+            </div>
+            <div class="dist-card span-3">
+                <div class="dist-header">
+                    <span class="stat-label">Сбережения</span>
+                    <span class="badge" id="view-pct-save">15%</span>
+                </div>
+                <div class="dist-val" id="view-val-save">0</div>
+                <div class="dist-sub" id="sub-save">Аванс: 0 ₽ | ЗП: 0 ₽</div>
+            </div>
+
+            <!-- ANALYTICS & GOALS SECTION -->
+            <div class="span-6 card">
+                <div class="card-title">Аналитика бюджета (Весь месяц)</div>
+                <div class="chart-container">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="span-6 card">
+                <div class="card-title">
+                    <span>Финансовые цели</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">(Разбиение 2/3 Аванс / 1/3 ЗП)</span>
+                </div>
+                <div id="goals-view-list" style="overflow-y: auto; max-height: 300px; padding-right: 0.5rem;">
+                    <!-- Goals rendered here -->
+                </div>
+                <div id="no-goals-msg" style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500; display: none; padding: 2rem 0; text-align: center;">
+                    Нет активных целей. Добавьте их в настройках.
+                </div>
             </div>
         </div>
 
-        <!-- 2 PHASES DETAILED CARDS (ADVANCE VS SALARY) -->
-        <div class="span-8" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <!-- PHASE 1: ADVANCE -->
-            <div class="card">
-                <div class="phase-header">
-                    <div class="phase-title">
-                        <span>Фаза 1: Аванс</span>
-                    </div>
-                    <span class="phase-pill" id="phase1-total-badge">127 000 ₽</span>
-                </div>
-
-                <div class="phase-row">
-                    <span class="label">Доход (Тимур + Лера)</span>
-                    <span class="value" id="phase1-inc">0 ₽</span>
-                </div>
-                <div class="phase-row">
-                    <span class="label">1. Коммуналка</span>
-                    <span class="value" id="phase1-comm">0 ₽</span>
-                </div>
-                <div class="phase-row">
-                    <span class="label">2. Цели (Доля 2/3)</span>
-                    <span class="value highlight" id="phase1-goals">0 ₽</span>
-                </div>
-
-                <div class="phase-residual-box">
+        <!-- VIEW 2: GROCERIES DETAILING -->
+        <div id="view-groceries" class="tab-view" style="display: none; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; grid-column: span 12;">
+            <div class="span-12 card" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                     <div>
-                        <div class="stat-label" style="font-size: 0.65rem;">Остаток на свободные траты</div>
-                        <div class="phase-residual-val" id="phase1-free">0 ₽</div>
+                        <div class="stat-label">Детализация категорий</div>
+                        <div style="font-size: 2.2rem; font-weight: 900; margin-top: 0.2rem;" id="groc-page-budget">Выделено: 0 ₽</div>
                     </div>
-                    <span class="badge">Начало месяца</span>
+                    <div style="display: flex; gap: 2.5rem; align-items: center; flex-wrap: wrap;">
+                        <div style="text-align: right;">
+                            <div class="stat-label">Куплено в этом месяце</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text);" id="groc-page-spent">0 ₽</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="stat-label">Остаток бюджета</div>
+                            <div style="font-size: 1.8rem; font-weight: 900; color: #137333;" id="groc-page-rem">0 ₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.25rem; background: var(--border); height: 12px; border-radius: 6px; overflow: hidden;">
+                    <div id="groc-progress" style="width: 0%; height: 100%; background: #137333; transition: var(--transition);"></div>
                 </div>
             </div>
 
-            <!-- PHASE 2: SALARY -->
-            <div class="card">
-                <div class="phase-header">
-                    <div class="phase-title">
-                        <span>Фаза 2: Зарплата</span>
-                    </div>
-                    <span class="phase-pill accent" id="phase2-total-badge">78 000 ₽</span>
-                </div>
-
-                <div class="phase-row">
-                    <span class="label">Доход (Тимур + Лера)</span>
-                    <span class="value" id="phase2-inc">0 ₽</span>
-                </div>
-                <div class="phase-row">
-                    <span class="label">1. Аренда квартиры</span>
-                    <span class="value" id="phase2-rent">0 ₽</span>
-                </div>
-                <div class="phase-row">
-                    <span class="label">2. Цели (Доля 1/3)</span>
-                    <span class="value highlight" id="phase2-goals">0 ₽</span>
-                </div>
-
-                <div class="phase-residual-box">
+            <div class="span-4 card">
+                <div class="card-title">Добавить покупку продуктов</div>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
                     <div>
-                        <div class="stat-label" style="font-size: 0.65rem;">Остаток на свободные траты</div>
-                        <div class="phase-residual-val" id="phase2-free">0 ₽</div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Наименование / Магазин</label>
+                        <input type="text" id="add-groc-name" placeholder="Например: Закупка в Ашане" style="width: 100%;">
                     </div>
-                    <span class="badge">Середина месяца</span>
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Сумма (₽)</label>
+                        <input type="number" id="add-groc-amount" placeholder="0" style="width: 100%; text-align: left;">
+                    </div>
+                    <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="addGroceryItem()">+ Внести покупку</button>
+                </div>
+            </div>
+
+            <div class="span-8 card">
+                <div class="card-title">
+                    <span>Список трат на продукты</span>
+                    <span id="groc-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 покупок</span>
+                </div>
+                <div id="groc-items-list" style="overflow-y: auto; max-height: 480px;">
+                    <!-- Rendered via JS -->
                 </div>
             </div>
         </div>
 
-        <!-- FULL MONTH COMBINED DISTRIBUTION -->
-        <div class="span-12" style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
-            <h3 style="margin: 0; font-size: 1.4rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;">Сводное распределение остатка</h3>
-            <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent);" id="dist-warning"></div>
+        <!-- VIEW 3: WANTS & WISHLIST DETAILING -->
+        <div id="view-wants" class="tab-view" style="display: none; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; grid-column: span 12;">
+            <div class="span-12 card" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div class="stat-label">Детализация категорий</div>
+                        <div style="font-size: 2.2rem; font-weight: 900; margin-top: 0.2rem;" id="wants-page-budget">Выделено: 0 ₽</div>
+                    </div>
+                    <div style="display: flex; gap: 2.5rem; align-items: center; flex-wrap: wrap;">
+                        <div style="text-align: right;">
+                            <div class="stat-label">Исполнено в этом месяце</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text);" id="wants-page-spent">0 ₽</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="stat-label">Свободный остаток</div>
+                            <div style="font-size: 1.8rem; font-weight: 900; color: #137333;" id="wants-page-rem">0 ₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.25rem; background: var(--border); height: 12px; border-radius: 6px; overflow: hidden;">
+                    <div id="wants-progress" style="width: 0%; height: 100%; background: #137333; transition: var(--transition);"></div>
+                </div>
+            </div>
+
+            <div class="span-4 card">
+                <div class="card-title">Добавить в Wish-лист</div>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Название желания</label>
+                        <input type="text" id="add-wants-name" placeholder="Например: Кофейная станция" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Стоимость (₽)</label>
+                        <input type="number" id="add-wants-amount" placeholder="0" style="width: 100%; text-align: left;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Приоритет</label>
+                        <select id="add-wants-priority" style="width: 100%; padding: 0.65rem; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); outline: none; background: #fff;">
+                            <option value="Обычный">💡 Обычный</option>
+                            <option value="Средний">⚡ Средний</option>
+                            <option value="Высокий">🔥 Высокий</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="addWantsItem()">+ Добавить желание</button>
+                </div>
+            </div>
+
+            <div class="span-8 card">
+                <div class="card-title">
+                    <span>Карточки желаний (Wishlist)</span>
+                    <span id="wants-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 желаний</span>
+                </div>
+                <div id="wants-items-list" style="overflow-y: auto; max-height: 480px;">
+                    <!-- Rendered via JS -->
+                </div>
+            </div>
         </div>
 
-        <div class="dist-card span-3">
-            <div class="dist-header">
-                <span class="stat-label">Продукты</span>
-                <span class="badge" id="view-pct-groc">55%</span>
-            </div>
-            <div class="dist-val" id="view-val-groc">0</div>
-            <div class="dist-sub" id="sub-groc">Аванс: 0 ₽ | ЗП: 0 ₽</div>
-        </div>
-        <div class="dist-card span-3">
-            <div class="dist-header">
-                <span class="stat-label">Хотелки</span>
-                <span class="badge" id="view-pct-wants">20%</span>
-            </div>
-            <div class="dist-val" id="view-val-wants">0</div>
-            <div class="dist-sub" id="sub-wants">Аванс: 0 ₽ | ЗП: 0 ₽</div>
-        </div>
-        <div class="dist-card span-3">
-            <div class="dist-header">
-                <span class="stat-label">Внеплановые</span>
-                <span class="badge" id="view-pct-unplan">10%</span>
-            </div>
-            <div class="dist-val" id="view-val-unplan">0</div>
-            <div class="dist-sub" id="sub-unplan">Аванс: 0 ₽ | ЗП: 0 ₽</div>
-        </div>
-        <div class="dist-card span-3">
-            <div class="dist-header">
-                <span class="stat-label">Сбережения</span>
-                <span class="badge" id="view-pct-save">15%</span>
-            </div>
-            <div class="dist-val" id="view-val-save">0</div>
-            <div class="dist-sub" id="sub-save">Аванс: 0 ₽ | ЗП: 0 ₽</div>
-        </div>
+        <!-- VIEW 4: UNPLANNED EXPENSES DETAILING -->
+        <div id="view-unplanned" class="tab-view" style="display: none; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; grid-column: span 12;">
+            <div class="span-12 card" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div class="stat-label">Детализация категорий</div>
+                        <div style="font-size: 2.2rem; font-weight: 900; margin-top: 0.2rem;" id="unplan-page-budget">Выделено: 0 ₽</div>
+                    </div>
+                    <div style="display: flex; gap: 2.5rem; align-items: center; flex-wrap: wrap;">
+                        <div style="text-align: right;">
+                            <div class="stat-label">Потрачено внепланово</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text);" id="unplan-page-spent">0 ₽</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="stat-label">Остаток резерва</div>
+                            <div style="font-size: 1.8rem; font-weight: 900; color: #137333;" id="unplan-page-rem">0 ₽</div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- ANALYTICS & GOALS SECTION -->
-        <div class="span-6 card">
-            <div class="card-title">Аналитика бюджета (Весь месяц)</div>
-            <div class="chart-container">
-                <canvas id="mainChart"></canvas>
+                <div style="margin-top: 1.25rem; background: var(--border); height: 12px; border-radius: 6px; overflow: hidden;">
+                    <div id="unplan-progress" style="width: 0%; height: 100%; background: #137333; transition: var(--transition);"></div>
+                </div>
             </div>
-        </div>
-        
-        <div class="span-6 card">
-            <div class="card-title">
-                <span>Финансовые цели</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">(Разбиение 2/3 Аванс / 1/3 ЗП)</span>
+
+            <div class="span-4 card">
+                <div class="card-title">Внести внеплановую трату</div>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">На что потрачено?</label>
+                        <input type="text" id="add-unplan-name" placeholder="Например: Ремонт авто" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Сумма (₽)</label>
+                        <input type="number" id="add-unplan-amount" placeholder="0" style="width: 100%; text-align: left;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Категория / Причина</label>
+                        <select id="add-unplan-category" style="width: 100%; padding: 0.65rem; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); outline: none; background: #fff;">
+                            <option value="Авто">🚗 Авто / Транспорт</option>
+                            <option value="Здоровье">🏥 Здоровье / Аптека</option>
+                            <option value="Дом">🏠 Дом / Быт</option>
+                            <option value="Подарки">🎁 Подарки / Праздники</option>
+                            <option value="Прочее">⚡ Прочее внеплановое</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="addUnplannedItem()">+ Внести расчёт</button>
+                </div>
             </div>
-            <div id="goals-view-list" style="overflow-y: auto; max-height: 300px; padding-right: 0.5rem;">
-                <!-- Goals rendered here -->
-            </div>
-            <div id="no-goals-msg" style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500; display: none; padding: 2rem 0; text-align: center;">
-                Нет активных целей. Добавьте их в настройках.
+
+            <div class="span-8 card">
+                <div class="card-title">
+                    <span>Журнал внеплановых трат</span>
+                    <span id="unplan-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 записей</span>
+                </div>
+                <div id="unplan-items-list" style="overflow-y: auto; max-height: 480px;">
+                    <!-- Rendered via JS -->
+                </div>
             </div>
         </div>
     </div>
@@ -448,6 +725,13 @@
                             <div class="flex-inputs">
                                 <input type="number" id="in-l-adv" placeholder="65 000" oninput="triggerUpdate()">
                                 <input type="number" id="in-l-sal" placeholder="30 000" oninput="triggerUpdate()">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Доп. доход (Аванс / ЗП)</label>
+                            <div class="flex-inputs">
+                                <input type="number" id="in-extra-adv" placeholder="0" oninput="triggerUpdate()">
+                                <input type="number" id="in-extra-sal" placeholder="0" oninput="triggerUpdate()">
                             </div>
                         </div>
                     </div>
@@ -555,6 +839,13 @@
                             <canvas id="historyChart"></canvas>
                         </div>
                     </div>
+
+                    <div class="form-section" style="padding: 1.25rem;">
+                        <div class="form-title">Структура внеплановых трат (На что уходили деньги за всё время)</div>
+                        <div id="stats-unplanned-breakdown" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                            <!-- Unplanned breakdown -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -563,13 +854,25 @@
     <script>
         // State Management
         const defaultState = {
-            incomes: { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000 },
+            incomes: { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000, extraAdv: 0, extraSal: 0 },
             fixed: { comm: 8000, rent: 32000 },
             goals: [
                 { id: 1, name: 'Кольцо', target: 250000, months: 12 },
                 { id: 2, name: 'Отпуск', target: 500000, months: 12 }
             ],
-            distPct: { groc: 55, wants: 20, unplan: 10, save: 15 }
+            distPct: { groc: 55, wants: 20, unplan: 10, save: 15 },
+            groceries: [
+                { id: 1, name: 'Закупка в гипермаркете', amount: 14500, done: true, date: '02.08.2026' },
+                { id: 2, name: 'Фрукты и овощи', amount: 3200, done: true, date: '08.08.2026' }
+            ],
+            wants: [
+                { id: 1, name: 'Кофейная станция', amount: 18000, done: false, priority: 'Высокий' },
+                { id: 2, name: 'Беспроводные наушники', amount: 12000, done: false, priority: 'Средний' }
+            ],
+            unplanned: [
+                { id: 1, name: 'Замена фильтров в машине', amount: 3500, category: 'Авто', date: '05.08.2026' },
+                { id: 2, name: 'Прием врача / лекарства', amount: 2400, category: 'Здоровье', date: '09.08.2026' }
+            ]
         };
 
         let appState = JSON.parse(JSON.stringify(defaultState));
@@ -671,8 +974,8 @@
 
         function renderDashboard() {
             // Incomes
-            const incAdv = (appState.incomes.tAdv || 0) + (appState.incomes.lAdv || 0);
-            const incSal = (appState.incomes.tSal || 0) + (appState.incomes.lSal || 0);
+            const incAdv = (appState.incomes.tAdv || 0) + (appState.incomes.lAdv || 0) + (appState.incomes.extraAdv || 0);
+            const incSal = (appState.incomes.tSal || 0) + (appState.incomes.lSal || 0) + (appState.incomes.extraSal || 0);
             const totalInc = incAdv + incSal;
 
             // Goals calculation (2/3 from Advance, 1/3 from Salary)
@@ -801,6 +1104,11 @@
             document.getElementById('sub-save').innerText = `Аванс: ${fmt(saveAdv)} | ЗП: ${fmt(saveSal)}`;
 
             drawChart(comm + rent, totalMonthlyGoals, grocTot, wantsTot, unplanTot, saveTot);
+            
+            // Render sub-pages detailing
+            renderGroceriesPage(totalFree);
+            renderWantsPage(totalFree);
+            renderUnplannedPage(totalFree);
         }
 
         function drawChart(baseFixed, totalGoals, groc, wants, unplan, save) {
@@ -829,6 +1137,344 @@
             });
         }
 
+        // TAB SWITCHING
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
+            
+            document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+            document.getElementById(`view-${tabName}`).style.display = 'grid';
+        }
+
+        // GROCERIES PAGE LOGIC
+        function renderGroceriesPage(totalFree) {
+            const pG = appState.distPct.groc || 0;
+            const allocated = Math.round(totalFree * (pG / 100));
+            
+            if (!appState.groceries) appState.groceries = [];
+            
+            let spent = 0;
+            appState.groceries.forEach(item => {
+                if (item.done) spent += item.amount;
+            });
+            
+            const rem = allocated - spent;
+            const pctSpent = allocated > 0 ? Math.min(100, Math.round((spent / allocated) * 100)) : 0;
+            
+            document.getElementById('groc-page-budget').innerText = `Выделено: ${fmt(allocated)}`;
+            document.getElementById('groc-page-spent').innerText = fmt(spent);
+            
+            const remEl = document.getElementById('groc-page-rem');
+            remEl.innerText = fmt(rem);
+            if (rem < 0) {
+                remEl.style.color = 'var(--accent)';
+            } else {
+                remEl.style.color = '#137333';
+            }
+            
+            const progressEl = document.getElementById('groc-progress');
+            progressEl.style.width = `${pctSpent}%`;
+            if (spent > allocated) {
+                progressEl.style.background = 'var(--accent)';
+            } else {
+                progressEl.style.background = '#137333';
+            }
+            
+            document.getElementById('tab-badge-groc').innerText = `Осталось ${fmt(rem)}`;
+            document.getElementById('groc-items-count').innerText = `${appState.groceries.length} покупок`;
+            
+            const listEl = document.getElementById('groc-items-list');
+            listEl.innerHTML = '';
+            
+            if (appState.groceries.length === 0) {
+                listEl.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 2rem; font-weight: 500;">Список продуктов пуст. Добавьте первую покупку слева.</div>';
+                return;
+            }
+            
+            appState.groceries.slice().reverse().forEach(item => {
+                const div = document.createElement('div');
+                div.className = `item-row ${item.done ? 'done' : ''}`;
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                        <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleGroceryItem(${item.id})">
+                        <div>
+                            <div class="item-title">${item.name}</div>
+                            <div class="item-meta">${item.date || ''}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="item-amount">${fmt(item.amount)}</div>
+                        <button class="item-delete-btn" onclick="deleteGroceryItem(${item.id})" title="Удалить">&times;</button>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function addGroceryItem() {
+            const nameEl = document.getElementById('add-groc-name');
+            const amountEl = document.getElementById('add-groc-amount');
+            
+            const name = nameEl.value.trim();
+            const amount = parseFloat(amountEl.value) || 0;
+            
+            if (!name) return;
+            
+            if (!appState.groceries) appState.groceries = [];
+            appState.groceries.push({
+                id: Date.now(),
+                name: name,
+                amount: amount,
+                done: true,
+                date: new Date().toLocaleDateString('ru-RU')
+            });
+            
+            nameEl.value = '';
+            amountEl.value = '';
+            
+            savePlan();
+            renderDashboard();
+        }
+
+        function toggleGroceryItem(id) {
+            if (!appState.groceries) return;
+            const item = appState.groceries.find(i => i.id === id);
+            if (item) {
+                item.done = !item.done;
+                savePlan();
+                renderDashboard();
+            }
+        }
+
+        function deleteGroceryItem(id) {
+            if (!appState.groceries) return;
+            appState.groceries = appState.groceries.filter(i => i.id !== id);
+            savePlan();
+            renderDashboard();
+        }
+
+        // WANTS PAGE LOGIC
+        function renderWantsPage(totalFree) {
+            const pW = appState.distPct.wants || 0;
+            const allocated = Math.round(totalFree * (pW / 100));
+            
+            if (!appState.wants) appState.wants = [];
+            
+            let spent = 0;
+            appState.wants.forEach(item => {
+                if (item.done) spent += item.amount;
+            });
+            
+            const rem = allocated - spent;
+            const pctSpent = allocated > 0 ? Math.min(100, Math.round((spent / allocated) * 100)) : 0;
+            
+            document.getElementById('wants-page-budget').innerText = `Выделено: ${fmt(allocated)}`;
+            document.getElementById('wants-page-spent').innerText = fmt(spent);
+            
+            const remEl = document.getElementById('wants-page-rem');
+            remEl.innerText = fmt(rem);
+            if (rem < 0) {
+                remEl.style.color = 'var(--accent)';
+            } else {
+                remEl.style.color = '#137333';
+            }
+            
+            const progressEl = document.getElementById('wants-progress');
+            progressEl.style.width = `${pctSpent}%`;
+            if (spent > allocated) {
+                progressEl.style.background = 'var(--accent)';
+            } else {
+                progressEl.style.background = '#137333';
+            }
+            
+            document.getElementById('tab-badge-wants').innerText = `Осталось ${fmt(rem)}`;
+            document.getElementById('wants-items-count').innerText = `${appState.wants.length} желаний`;
+            
+            const listEl = document.getElementById('wants-items-list');
+            listEl.innerHTML = '';
+            
+            if (appState.wants.length === 0) {
+                listEl.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 2rem; font-weight: 500;">Wish-лист пуст. Добавьте ваше первое желание слева.</div>';
+                return;
+            }
+            
+            appState.wants.slice().reverse().forEach(item => {
+                let pClass = 'low';
+                let pText = '💡 Обычный';
+                if (item.priority === 'Высокий') { pClass = 'high'; pText = '🔥 Высокий'; }
+                else if (item.priority === 'Средний') { pClass = 'medium'; pText = '⚡ Средний'; }
+
+                const div = document.createElement('div');
+                div.className = `item-row ${item.done ? 'done' : ''}`;
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                        <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleWantsItem(${item.id})">
+                        <div>
+                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>${item.name}</span>
+                                <span class="priority-badge ${pClass}">${pText}</span>
+                            </div>
+                            <div class="item-meta">${item.done ? 'Исполнено' : 'В планах'}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="item-amount">${fmt(item.amount)}</div>
+                        <button class="item-delete-btn" onclick="deleteWantsItem(${item.id})" title="Удалить">&times;</button>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function addWantsItem() {
+            const nameEl = document.getElementById('add-wants-name');
+            const amountEl = document.getElementById('add-wants-amount');
+            const priorityEl = document.getElementById('add-wants-priority');
+            
+            const name = nameEl.value.trim();
+            const amount = parseFloat(amountEl.value) || 0;
+            const priority = priorityEl.value || 'Обычный';
+            
+            if (!name) return;
+            
+            if (!appState.wants) appState.wants = [];
+            appState.wants.push({
+                id: Date.now(),
+                name: name,
+                amount: amount,
+                done: false,
+                priority: priority
+            });
+            
+            nameEl.value = '';
+            amountEl.value = '';
+            
+            savePlan();
+            renderDashboard();
+        }
+
+        function toggleWantsItem(id) {
+            if (!appState.wants) return;
+            const item = appState.wants.find(i => i.id === id);
+            if (item) {
+                item.done = !item.done;
+                savePlan();
+                renderDashboard();
+            }
+        }
+
+        function deleteWantsItem(id) {
+            if (!appState.wants) return;
+            appState.wants = appState.wants.filter(i => i.id !== id);
+            savePlan();
+            renderDashboard();
+        }
+
+        // UNPLANNED PAGE LOGIC
+        function renderUnplannedPage(totalFree) {
+            const pU = appState.distPct.unplan || 0;
+            const allocated = Math.round(totalFree * (pU / 100));
+            
+            if (!appState.unplanned) appState.unplanned = [];
+            
+            let spent = 0;
+            appState.unplanned.forEach(item => {
+                spent += item.amount;
+            });
+            
+            const rem = allocated - spent;
+            const pctSpent = allocated > 0 ? Math.min(100, Math.round((spent / allocated) * 100)) : 0;
+            
+            document.getElementById('unplan-page-budget').innerText = `Выделено: ${fmt(allocated)}`;
+            document.getElementById('unplan-page-spent').innerText = fmt(spent);
+            
+            const remEl = document.getElementById('unplan-page-rem');
+            remEl.innerText = fmt(rem);
+            if (rem < 0) {
+                remEl.style.color = 'var(--accent)';
+            } else {
+                remEl.style.color = '#137333';
+            }
+            
+            const progressEl = document.getElementById('unplan-progress');
+            progressEl.style.width = `${pctSpent}%`;
+            if (spent > allocated) {
+                progressEl.style.background = 'var(--accent)';
+            } else {
+                progressEl.style.background = '#137333';
+            }
+            
+            document.getElementById('tab-badge-unplan').innerText = `Осталось ${fmt(rem)}`;
+            document.getElementById('unplan-items-count').innerText = `${appState.unplanned.length} трат`;
+            
+            const listEl = document.getElementById('unplan-items-list');
+            listEl.innerHTML = '';
+            
+            if (appState.unplanned.length === 0) {
+                listEl.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 2rem; font-weight: 500;">Внеплановых трат за этот месяц не зафиксировано.</div>';
+                return;
+            }
+            
+            appState.unplanned.slice().reverse().forEach(item => {
+                let catClass = 'medium';
+                if (item.category === 'Авто' || item.category === 'Здоровье') catClass = 'high';
+                else if (item.category === 'Дом') catClass = 'low';
+
+                const div = document.createElement('div');
+                div.className = 'item-row';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                        <div>
+                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>${item.name}</span>
+                                <span class="priority-badge ${catClass}">${item.category || 'Прочее'}</span>
+                            </div>
+                            <div class="item-meta">${item.date || ''}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="item-amount" style="color: var(--accent);">${fmt(item.amount)}</div>
+                        <button class="item-delete-btn" onclick="deleteUnplannedItem(${item.id})" title="Удалить">&times;</button>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function addUnplannedItem() {
+            const nameEl = document.getElementById('add-unplan-name');
+            const amountEl = document.getElementById('add-unplan-amount');
+            const catEl = document.getElementById('add-unplan-category');
+            
+            const name = nameEl.value.trim();
+            const amount = parseFloat(amountEl.value) || 0;
+            const category = catEl.value || 'Прочее';
+            
+            if (!name || amount <= 0) return;
+            
+            if (!appState.unplanned) appState.unplanned = [];
+            appState.unplanned.push({
+                id: Date.now(),
+                name: name,
+                amount: amount,
+                category: category,
+                date: new Date().toLocaleDateString('ru-RU')
+            });
+            
+            nameEl.value = '';
+            amountEl.value = '';
+            
+            savePlan();
+            renderDashboard();
+        }
+
+        function deleteUnplannedItem(id) {
+            if (!appState.unplanned) return;
+            appState.unplanned = appState.unplanned.filter(i => i.id !== id);
+            savePlan();
+            renderDashboard();
+        }
+
         function openModal() {
             populateModalFromState();
             document.getElementById('settingsModal').classList.add('active');
@@ -846,6 +1492,8 @@
             document.getElementById('in-t-sal').value = appState.incomes.tSal || '';
             document.getElementById('in-l-adv').value = appState.incomes.lAdv || '';
             document.getElementById('in-l-sal').value = appState.incomes.lSal || '';
+            document.getElementById('in-extra-adv').value = appState.incomes.extraAdv || '';
+            document.getElementById('in-extra-sal').value = appState.incomes.extraSal || '';
             
             document.getElementById('in-fix-comm').value = appState.fixed.comm || '';
             document.getElementById('in-fix-rent').value = appState.fixed.rent || '';
@@ -864,6 +1512,8 @@
             appState.incomes.tSal = parseFloat(document.getElementById('in-t-sal').value) || 0;
             appState.incomes.lAdv = parseFloat(document.getElementById('in-l-adv').value) || 0;
             appState.incomes.lSal = parseFloat(document.getElementById('in-l-sal').value) || 0;
+            appState.incomes.extraAdv = parseFloat(document.getElementById('in-extra-adv').value) || 0;
+            appState.incomes.extraSal = parseFloat(document.getElementById('in-extra-sal').value) || 0;
             
             appState.fixed.comm = parseFloat(document.getElementById('in-fix-comm').value) || 0;
             appState.fixed.rent = parseFloat(document.getElementById('in-fix-rent').value) || 0;
@@ -891,9 +1541,11 @@
             const tSal = parseFloat(document.getElementById('in-t-sal').value) || 0;
             const lAdv = parseFloat(document.getElementById('in-l-adv').value) || 0;
             const lSal = parseFloat(document.getElementById('in-l-sal').value) || 0;
+            const extraAdv = parseFloat(document.getElementById('in-extra-adv').value) || 0;
+            const extraSal = parseFloat(document.getElementById('in-extra-sal').value) || 0;
 
-            const incAdv = tAdv + lAdv;
-            const incSal = tSal + lSal;
+            const incAdv = tAdv + lAdv + extraAdv;
+            const incSal = tSal + lSal + extraSal;
 
             const comm = parseFloat(document.getElementById('in-fix-comm').value) || 0;
             const rent = parseFloat(document.getElementById('in-fix-rent').value) || 0;
@@ -999,7 +1651,7 @@
 
             history.forEach(item => {
                 const state = item.state;
-                const tInc = (state.incomes.tAdv || 0) + (state.incomes.tSal || 0) + (state.incomes.lAdv || 0) + (state.incomes.lSal || 0);
+                const tInc = (state.incomes.tAdv || 0) + (state.incomes.tSal || 0) + (state.incomes.lAdv || 0) + (state.incomes.lSal || 0) + (state.incomes.extraAdv || 0) + (state.incomes.extraSal || 0);
                 totalIncomeSum += tInc;
                 
                 let goalsTot = 0;
@@ -1065,6 +1717,44 @@
                     }
                 }
             });
+
+            // Aggregate unplanned categories across history
+            const categoryTotals = {};
+            let totalUnplannedSum = 0;
+            
+            history.forEach(item => {
+                const unplanList = item.state.unplanned || [];
+                unplanList.forEach(u => {
+                    const cat = u.category || 'Прочее';
+                    categoryTotals[cat] = (categoryTotals[cat] || 0) + (u.amount || 0);
+                    totalUnplannedSum += (u.amount || 0);
+                });
+            });
+
+            const breakdownEl = document.getElementById('stats-unplanned-breakdown');
+            breakdownEl.innerHTML = '';
+
+            if (totalUnplannedSum === 0) {
+                breakdownEl.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem 0;">Внеплановых трат за прошлые месяцы не зафиксировано.</div>';
+            } else {
+                Object.keys(categoryTotals).sort((a,b) => categoryTotals[b] - categoryTotals[a]).forEach(cat => {
+                    const amt = categoryTotals[cat];
+                    const pct = Math.round((amt / totalUnplannedSum) * 100);
+                    
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; margin-bottom: 0.4rem;';
+                    row.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                            <span>${cat}</span>
+                            <span>${fmt(amt)} (${pct}%)</span>
+                        </div>
+                        <div style="background: var(--border); height: 10px; border-radius: 5px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background: var(--accent); transition: var(--transition);"></div>
+                        </div>
+                    `;
+                    breakdownEl.appendChild(row);
+                });
+            }
         }
 
         // Initialize on Load
