@@ -396,7 +396,8 @@
                 </div>
             </div>
             
-            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <button class="btn-secondary" onclick="openMemoModal()" title="Памятка по распределению финансов">Памятка 💡</button>
                 <button class="btn-secondary" onclick="openStatsModal()">Статистика 📊</button>
                 <button class="btn-primary" onclick="openModal()">Настроить месяц ⚙️</button>
             </div>
@@ -917,6 +918,103 @@
         </div>
     </div>
 
+    <!-- MEMO MODAL -->
+    <div class="modal-overlay" id="memoModal">
+        <div class="modal-content" style="max-width: 750px;">
+            <div class="modal-header">
+                <h2>Памятка: Архитектура семейного бюджета</h2>
+                <button class="close-btn" onclick="closeMemoModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.5rem; padding: 1.75rem; overflow-y: auto; max-height: 80vh;">
+                
+                <!-- SECTION 1: 2-PHASE CASHFLOW -->
+                <div class="form-section">
+                    <div class="form-title">1. Двухфазная модель и Пропорциональный коэффициент</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+                        <div style="background: #fff; padding: 1rem; border-radius: 14px; border: 1px solid var(--border);">
+                            <div style="font-weight: 800; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem;">Phase 1: Аванс (Начало месяца)</div>
+                            <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: var(--text); line-height: 1.5;">
+                                <li><b>Доход:</b> Аванс Тимура + Аванс Леры (+ доп. аванс)</li>
+                                <li><b>Списания 1-й очереди:</b> Коммуналка (8 000 ₽) + <b>Пропорциональная доля целей</b> (по коэффициенту чистого аванса).</li>
+                                <li><b>Остаток:</b> Распределяется по % (Продукты, Хотелки, Внеплановые, Сбережения).</li>
+                            </ul>
+                        </div>
+                        <div style="background: #fff; padding: 1rem; border-radius: 14px; border: 1px solid var(--border);">
+                            <div style="font-weight: 800; color: var(--text); margin-bottom: 0.4rem; font-size: 0.95rem;">Phase 2: Зарплата (Середина месяца)</div>
+                            <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: var(--text); line-height: 1.5;">
+                                <li><b>Доход:</b> ЗП Тимура + ЗП Леры (+ доп. ЗП)</li>
+                                <li><b>Списания 1-й очереди:</b> Аренда жилья (32 000 ₽) + <b>Оставшаяся доля целей</b> (по коэффициенту чистой ЗП).</li>
+                                <li><b>Остаток:</b> Распределяется по % (Продукты, Хотелки, Внеплановые, Сбережения).</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; background: #fff; padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+                        💡 <b>Формула коэффициента целей:</b> <br>
+                        <code>Чистый Аванс = Доход Аванса - Коммуналка</code> | <code>Чистая ЗП = Доход ЗП - Аренда</code><br>
+                        Доли списаний по целям автоматически высчитываются как <b>Чистый Аванс / (Чистый Аванс + Чистая ЗП)</b>.
+                    </div>
+                </div>
+
+                <!-- SECTION 2: PRIORITIES & CATEGORIES -->
+                <div class="form-section">
+                    <div class="form-title">2. Приоритеты и категории трат</div>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.85rem;">
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <span style="font-size: 1.2rem;">🎯</span>
+                            <div>
+                                <b>1. Накопительные цели (Кольцо, Отпуск):</b> Высший приоритет. Списываются в первую очередь (2/3 с Аванса и 1/3 с ЗП) ДО распределения свободных средств.
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <span style="font-size: 1.2rem;">🏠</span>
+                            <div>
+                                <b>2. Обязательные расходы (Коммуналка и Аренда):</b> Оплачиваются сразу при получении соответственно Аванса и Зарплаты.
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <span style="font-size: 1.2rem;">🛒</span>
+                            <div>
+                                <b>3. Продукты и регулярные платежи (55% от остатка):</b> Бюджет на супермаркеты и обязательные ежемесячные расходы. Позиции с пином 📌 (Зал, Кофе, Бензин и т.д.) автоматически переходят в следующий месяц.
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <span style="font-size: 1.2rem;">🎁</span>
+                            <div>
+                                <b>4. Хотелки / Wishlist (20% от остатка):</b> Лимит на личные покупки. Невыполненные желания автоматически переносятся на следующие месяцы, пока не будут закрыты.
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <span style="font-size: 1.2rem;">⚡</span>
+                            <div>
+                                <b>5. Внеплановые траты (10% от остатка):</b> Резервный фонд на случай непредвиденных расходов (Авто, Здоровье, Быт). В новом месяце журнал всегда обнуляется.
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <span style="font-size: 1.2rem;">💰</span>
+                            <div>
+                                <b>6. Сбережения (15% от остатка):</b> Неприкосновенный семейный капитал.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: AUTOMATION & TIPS -->
+                <div class="form-section">
+                    <div class="form-title">3. Лайфхаки и автоматизация</div>
+                    <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: var(--text); line-height: 1.5;">
+                        <li><b>📥 Выписка из Т-Банка:</b> В разделе «Продукты» можно загрузить выгруженный `.csv` файл Т-Банка — супермаркеты отфильтруются автоматически!</li>
+                        <li><b>📌 Механика Пинов:</b> Отметьте пином 📌 любую регулярную покупку, и она станет шаблоном для каждого нового месяца.</li>
+                        <li><b>📊 Анализ истории:</b> Нажмите «Статистика 📊», чтобы посмотреть динамику доходов, накоплений и структуру внеплановых трат за всё время.</li>
+                    </ul>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="closeMemoModal()">Отлично, всё понятно!</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Default Mandatory Groceries Template
         const defaultGroceriesTemplate = [
@@ -951,6 +1049,20 @@
 
         const fmt = (num) => Math.round(num || 0).toLocaleString('ru-RU') + ' ₽';
         const fmtBig = (num) => Math.round(num || 0).toLocaleString('ru-RU');
+
+        function calcGoalsRatio(incAdv, comm, incSal, rent) {
+            const netAdv = Math.max(0, incAdv - comm);
+            const netSal = Math.max(0, incSal - rent);
+            const totalNet = netAdv + netSal;
+            
+            if (totalNet > 0) {
+                return {
+                    rAdv: netAdv / totalNet,
+                    rSal: netSal / totalNet
+                };
+            }
+            return { rAdv: 0.5, rSal: 0.5 };
+        }
 
         function parseDateVal(item) {
             if (item.date) {
@@ -1134,7 +1246,14 @@
             const incSal = (appState.incomes.tSal || 0) + (appState.incomes.lSal || 0) + (appState.incomes.extraSal || 0);
             const totalInc = incAdv + incSal;
 
-            // Goals calculation (2/3 from Advance, 1/3 from Salary)
+            // Fixed Expenses
+            const comm = appState.fixed.comm || 0;
+            const rent = appState.fixed.rent || 0;
+
+            // Dynamic Ratio Coefficient based on Net Cash Flows (Income - Mandatory Bills)
+            const { rAdv, rSal } = calcGoalsRatio(incAdv, comm, incSal, rent);
+
+            // Goals calculation
             let totalMonthlyGoals = 0;
             let goalsAdvTotal = 0;
             let goalsSalTotal = 0;
@@ -1147,11 +1266,11 @@
             } else {
                 document.getElementById('no-goals-msg').style.display = 'none';
                 appState.goals.forEach(goal => {
-                    // Exact rounded formula as in user Excel: ROUND(target / months / 3 * 2, -2) for 2/3
                     const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
                     const monthly = Math.round(rawMonthly / 100) * 100;
                     
-                    const advShare = Math.round((monthly * 2 / 3) / 100) * 100;
+                    // Proportional goals split based on coefficient
+                    const advShare = Math.round((monthly * rAdv) / 100) * 100;
                     const salShare = monthly - advShare;
 
                     totalMonthlyGoals += monthly;
@@ -1716,6 +1835,13 @@
             }
         }
 
+        function openMemoModal() {
+            document.getElementById('memoModal').classList.add('active');
+        }
+        function closeMemoModal() {
+            document.getElementById('memoModal').classList.remove('active');
+        }
+
         function openModal() {
             populateModalFromState();
             document.getElementById('settingsModal').classList.add('active');
@@ -1791,12 +1917,14 @@
             const comm = parseFloat(document.getElementById('in-fix-comm').value) || 0;
             const rent = parseFloat(document.getElementById('in-fix-rent').value) || 0;
 
+            const { rAdv, rSal } = calcGoalsRatio(incAdv, comm, incSal, rent);
+
             let goalsAdvTotal = 0;
             let goalsSalTotal = 0;
             appState.goals.forEach(goal => {
                 const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
                 const monthly = Math.round(rawMonthly / 100) * 100;
-                const advShare = Math.round((monthly * 2 / 3) / 100) * 100;
+                const advShare = Math.round((monthly * rAdv) / 100) * 100;
                 const salShare = monthly - advShare;
                 goalsAdvTotal += advShare;
                 goalsSalTotal += salShare;
