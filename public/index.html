@@ -572,9 +572,12 @@
             </div>
 
             <div class="span-8 card">
-                <div class="card-title">
-                    <span>Список трат на продукты</span>
-                    <span id="groc-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 покупок</span>
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span>Список трат на продукты</span>
+                        <span id="groc-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 покупок</span>
+                    </div>
+                    <button class="btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-radius: 6px; color: var(--accent);" onclick="clearGroceriesList()" title="Очистить список продуктов">🗑️ Очистить список</button>
                 </div>
                 <div id="groc-items-list" style="overflow-y: auto; max-height: 480px;">
                     <!-- Rendered via JS -->
@@ -631,9 +634,12 @@
             </div>
 
             <div class="span-8 card">
-                <div class="card-title">
-                    <span>Карточки желаний (Wishlist)</span>
-                    <span id="wants-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 желаний</span>
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span>Карточки желаний (Wishlist)</span>
+                        <span id="wants-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 желаний</span>
+                    </div>
+                    <button class="btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-radius: 6px; color: var(--accent);" onclick="clearWantsList()" title="Очистить Wish-лист">🗑️ Очистить список</button>
                 </div>
                 <div id="wants-items-list" style="overflow-y: auto; max-height: 480px;">
                     <!-- Rendered via JS -->
@@ -692,9 +698,12 @@
             </div>
 
             <div class="span-8 card">
-                <div class="card-title">
-                    <span>Журнал внеплановых трат</span>
-                    <span id="unplan-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 записей</span>
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span>Журнал внеплановых трат</span>
+                        <span id="unplan-items-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 записей</span>
+                    </div>
+                    <button class="btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-radius: 6px; color: var(--accent);" onclick="clearUnplannedList()" title="Очистить внеплановые траты">🗑️ Очистить список</button>
                 </div>
                 <div id="unplan-items-list" style="overflow-y: auto; max-height: 480px;">
                     <!-- Rendered via JS -->
@@ -881,14 +890,14 @@
     <script>
         // Default Mandatory Groceries Template
         const defaultGroceriesTemplate = [
-            { id: 'def_1', name: 'Зал', amount: 6000, done: false, isTemplate: true },
-            { id: 'def_2', name: 'Кофе', amount: 5000, done: false, isTemplate: true },
-            { id: 'def_3', name: 'Корм Арии', amount: 3500, done: false, isTemplate: true },
-            { id: 'def_4', name: 'Интернет', amount: 1150, done: false, isTemplate: true },
-            { id: 'def_5', name: 'Телефон', amount: 1500, done: false, isTemplate: true },
-            { id: 'def_6', name: 'Гемини', amount: 2000, done: false, isTemplate: true },
-            { id: 'def_7', name: 'Бензин', amount: 6000, done: false, isTemplate: true },
-            { id: 'def_8', name: 'Протеин и креатин', amount: 2500, done: false, isTemplate: true }
+            { id: 'def_1', name: '🏋️ Зал', amount: 6000, done: false, isTemplate: true },
+            { id: 'def_2', name: '☕ Кофе', amount: 5000, done: false, isTemplate: true },
+            { id: 'def_3', name: '🐶 Корм Арии', amount: 3500, done: false, isTemplate: true },
+            { id: 'def_4', name: '🌐 Интернет', amount: 1150, done: false, isTemplate: true },
+            { id: 'def_5', name: '📱 Телефон', amount: 1500, done: false, isTemplate: true },
+            { id: 'def_6', name: '🤖 Гемини', amount: 2000, done: false, isTemplate: true },
+            { id: 'def_7', name: '⛽ Бензин', amount: 6000, done: false, isTemplate: true },
+            { id: 'def_8', name: '💊 Протеин и креатин', amount: 2500, done: false, isTemplate: true }
         ];
 
         // State Management
@@ -1379,6 +1388,14 @@
             renderDashboard();
         }
 
+        function clearGroceriesList() {
+            if (confirm('Вы действительно хотите очистить список продуктов?')) {
+                appState.groceries = [];
+                savePlan();
+                renderDashboard();
+            }
+        }
+
         // WANTS PAGE LOGIC
         function renderWantsPage(totalFree) {
             const pW = appState.distPct.wants || 0;
@@ -1505,6 +1522,14 @@
             renderDashboard();
         }
 
+        function clearWantsList() {
+            if (confirm('Вы действительно хотите очистить Wish-лист?')) {
+                appState.wants = [];
+                savePlan();
+                renderDashboard();
+            }
+        }
+
         // UNPLANNED PAGE LOGIC
         function renderUnplannedPage(totalFree) {
             const pU = appState.distPct.unplan || 0;
@@ -1608,6 +1633,14 @@
             appState.unplanned = appState.unplanned.filter(i => i.id !== id);
             savePlan();
             renderDashboard();
+        }
+
+        function clearUnplannedList() {
+            if (confirm('Вы действительно хотите очистить журнал внеплановых трат?')) {
+                appState.unplanned = [];
+                savePlan();
+                renderDashboard();
+            }
         }
 
         function openModal() {
