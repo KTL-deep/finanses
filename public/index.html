@@ -1381,10 +1381,7 @@
                     <div style="display: flex; align-items: center; gap: 0.8rem;">
                         <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleGroceryItem('${item.id}')">
                         <div>
-                            <div class="item-title" style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span>${item.name}</span>
-                                ${item.pinned ? '<span style="font-size: 0.8rem;" title="Закреплено для ежемесячного переноса">📌</span>' : ''}
-                            </div>
+                            <div class="item-title">${item.name}</div>
                             <div class="item-meta">${item.date || ''}</div>
                         </div>
                     </div>
