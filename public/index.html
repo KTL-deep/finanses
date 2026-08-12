@@ -475,24 +475,28 @@
                         <div class="input-group">
                             <label>Продукты</label>
                             <div class="flex-inputs" style="align-items: center; width: auto;">
+                                <span id="modal-val-groc" style="font-size: 0.95rem; font-weight: 800; color: var(--accent); margin-right: 0.75rem;">0 ₽</span>
                                 <input type="number" id="in-pct-groc" style="width: 90px; text-align: center;" oninput="triggerUpdate()">
                             </div>
                         </div>
                         <div class="input-group">
                             <label>Хотелки</label>
                             <div class="flex-inputs" style="align-items: center; width: auto;">
+                                <span id="modal-val-wants" style="font-size: 0.95rem; font-weight: 800; color: var(--accent); margin-right: 0.75rem;">0 ₽</span>
                                 <input type="number" id="in-pct-wants" style="width: 90px; text-align: center;" oninput="triggerUpdate()">
                             </div>
                         </div>
                         <div class="input-group">
                             <label>Внеплановые</label>
                             <div class="flex-inputs" style="align-items: center; width: auto;">
+                                <span id="modal-val-unplan" style="font-size: 0.95rem; font-weight: 800; color: var(--accent); margin-right: 0.75rem;">0 ₽</span>
                                 <input type="number" id="in-pct-unplan" style="width: 90px; text-align: center;" oninput="triggerUpdate()">
                             </div>
                         </div>
                         <div class="input-group">
                             <label>Сбережения</label>
                             <div class="flex-inputs" style="align-items: center; width: auto;">
+                                <span id="modal-val-save" style="font-size: 0.95rem; font-weight: 800; color: var(--accent); margin-right: 0.75rem;">0 ₽</span>
                                 <input type="number" id="in-pct-save" style="width: 90px; text-align: center;" oninput="triggerUpdate()">
                             </div>
                         </div>
@@ -881,6 +885,38 @@
             } else {
                 document.getElementById('modal-pct-warn').style.display = 'none';
             }
+
+            // Calculate monetary values for modal live view
+            const tAdv = parseFloat(document.getElementById('in-t-adv').value) || 0;
+            const tSal = parseFloat(document.getElementById('in-t-sal').value) || 0;
+            const lAdv = parseFloat(document.getElementById('in-l-adv').value) || 0;
+            const lSal = parseFloat(document.getElementById('in-l-sal').value) || 0;
+
+            const incAdv = tAdv + lAdv;
+            const incSal = tSal + lSal;
+
+            const comm = parseFloat(document.getElementById('in-fix-comm').value) || 0;
+            const rent = parseFloat(document.getElementById('in-fix-rent').value) || 0;
+
+            let goalsAdvTotal = 0;
+            let goalsSalTotal = 0;
+            appState.goals.forEach(goal => {
+                const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
+                const monthly = Math.round(rawMonthly / 100) * 100;
+                const advShare = Math.round((monthly * 2 / 3) / 100) * 100;
+                const salShare = monthly - advShare;
+                goalsAdvTotal += advShare;
+                goalsSalTotal += salShare;
+            });
+
+            const phase1Free = Math.max(0, incAdv - comm - goalsAdvTotal);
+            const phase2Free = Math.max(0, incSal - rent - goalsSalTotal);
+            const totalFree = phase1Free + phase2Free;
+
+            document.getElementById('modal-val-groc').innerText = fmt(totalFree * (p1 / 100));
+            document.getElementById('modal-val-wants').innerText = fmt(totalFree * (p2 / 100));
+            document.getElementById('modal-val-unplan').innerText = fmt(totalFree * (p3 / 100));
+            document.getElementById('modal-val-save').innerText = fmt(totalFree * (p4 / 100));
         }
 
         function renderModalGoals() {
@@ -915,6 +951,7 @@
         function updateGoal(index, field, value) {
             if (field === 'name') appState.goals[index][field] = value;
             else appState.goals[index][field] = parseFloat(value) || 0;
+            triggerUpdate();
         }
         function deleteGoal(index) {
             appState.goals.splice(index, 1);
