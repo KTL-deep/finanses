@@ -879,27 +879,30 @@
     </div>
 
     <script>
+        // Default Mandatory Groceries Template
+        const defaultGroceriesTemplate = [
+            { id: 'def_1', name: 'Зал', amount: 6000, done: false, isTemplate: true },
+            { id: 'def_2', name: 'Кофе', amount: 5000, done: false, isTemplate: true },
+            { id: 'def_3', name: 'Корм Арии', amount: 3500, done: false, isTemplate: true },
+            { id: 'def_4', name: 'Интернет', amount: 1150, done: false, isTemplate: true },
+            { id: 'def_5', name: 'Телефон', amount: 1500, done: false, isTemplate: true },
+            { id: 'def_6', name: 'Гемини', amount: 2000, done: false, isTemplate: true },
+            { id: 'def_7', name: 'Бензин', amount: 6000, done: false, isTemplate: true },
+            { id: 'def_8', name: 'Протеин и креатин', amount: 2500, done: false, isTemplate: true }
+        ];
+
         // State Management
         const defaultState = {
             incomes: { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000, extraAdv: 0, extraSal: 0 },
             fixed: { comm: 8000, rent: 32000 },
             goals: [
-                { id: 1, name: 'Кольцо', target: 250000, months: 12 },
-                { id: 2, name: 'Отпуск', target: 500000, months: 12 }
+                { id: 1, name: 'Кольцо', target: 250000, months: 12, saved: 0 },
+                { id: 2, name: 'Отпуск', target: 500000, months: 12, saved: 0 }
             ],
             distPct: { groc: 55, wants: 20, unplan: 10, save: 15 },
-            groceries: [
-                { id: 1, name: 'Закупка в гипермаркете', amount: 14500, done: true, date: '02.08.2026' },
-                { id: 2, name: 'Фрукты и овощи', amount: 3200, done: true, date: '08.08.2026' }
-            ],
-            wants: [
-                { id: 1, name: 'Кофейная станция', amount: 18000, done: false, priority: 'Высокий' },
-                { id: 2, name: 'Беспроводные наушники', amount: 12000, done: false, priority: 'Средний' }
-            ],
-            unplanned: [
-                { id: 1, name: 'Замена фильтров в машине', amount: 3500, category: 'Авто', date: '05.08.2026' },
-                { id: 2, name: 'Прием врача / лекарства', amount: 2400, category: 'Здоровье', date: '09.08.2026' }
-            ]
+            groceries: JSON.parse(JSON.stringify(defaultGroceriesTemplate)),
+            wants: [],
+            unplanned: []
         };
 
         let appState = JSON.parse(JSON.stringify(defaultState));
@@ -929,6 +932,66 @@
 
         const getMonthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
+        function getPrevMonthKey(monthKey) {
+            const [y, m] = monthKey.split('-').map(Number);
+            const d = new Date(y, m - 1 - 1, 1);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function inheritFromPreviousMonth(prevState) {
+            const newState = JSON.parse(JSON.stringify(prevState));
+
+            // Reset extra income for new month
+            newState.incomes.extraAdv = 0;
+            newState.incomes.extraSal = 0;
+
+            // Increment goal saved amounts by monthly contributions
+            if (newState.goals) {
+                newState.goals.forEach(goal => {
+                    const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
+                    const monthly = Math.round(rawMonthly / 100) * 100;
+                    goal.saved = (goal.saved || 0) + monthly;
+                });
+            }
+
+            // 1. GROCERIES:
+            // Mandatory template items (reset done: false)
+            const baseTemplateNames = defaultGroceriesTemplate.map(t => t.name.toLowerCase());
+            const newGroceries = JSON.parse(JSON.stringify(defaultGroceriesTemplate));
+            
+            // Manual items from previous month (NOT from T-Bank and NOT in default template)
+            (prevState.groceries || []).forEach(item => {
+                if (!item.fromTBank && !baseTemplateNames.includes((item.name || '').toLowerCase())) {
+                    newGroceries.push({
+                        ...item,
+                        id: Date.now() + Math.random(),
+                        done: false,
+                        date: ''
+                    });
+                }
+            });
+            newState.groceries = newGroceries;
+
+            // 2. WANTS (Хотелки): Only unclosed (done === false) items carry forward!
+            newState.wants = (prevState.wants || []).filter(item => !item.done);
+
+            // 3. UNPLANNED (Внеплановые): Reset to empty array for new month!
+            newState.unplanned = [];
+
+            return newState;
+        }
+
+        function ensureDefaultGroceries() {
+            if (!appState.groceries) appState.groceries = [];
+            const existingNames = appState.groceries.map(g => (g.name || '').toLowerCase());
+            
+            defaultGroceriesTemplate.forEach(tpl => {
+                if (!existingNames.includes(tpl.name.toLowerCase())) {
+                    appState.groceries.push(JSON.parse(JSON.stringify(tpl)));
+                }
+            });
+        }
+
         async function loadPlan() {
             const monthKey = getMonthKey(currentDate);
             updateSyncBadge('saving');
@@ -940,23 +1003,39 @@
                     appState = data.state;
                     updateSyncBadge('synced');
                 } else if (res.status === 404) {
-                    // Try localStorage backup or load defaultState
-                    const local = localStorage.getItem(`plan_${monthKey}`);
-                    if (local) {
-                        appState = JSON.parse(local);
+                    const prevKey = getPrevMonthKey(monthKey);
+                    const prevRes = await fetch(`/api/plans/${prevKey}`);
+                    
+                    if (prevRes.ok) {
+                        const prevData = await prevRes.json();
+                        appState = inheritFromPreviousMonth(prevData.state);
                     } else {
-                        appState = JSON.parse(JSON.stringify(defaultState));
+                        const localPrev = localStorage.getItem(`plan_${prevKey}`);
+                        if (localPrev) {
+                            appState = inheritFromPreviousMonth(JSON.parse(localPrev));
+                        } else {
+                            const localCurrent = localStorage.getItem(`plan_${monthKey}`);
+                            if (localCurrent) {
+                                appState = JSON.parse(localCurrent);
+                            } else {
+                                appState = JSON.parse(JSON.stringify(defaultState));
+                            }
+                        }
                     }
                     updateSyncBadge('synced');
                 }
             } catch (err) {
                 console.warn("Backend offline, using localStorage", err);
-                const local = localStorage.getItem(`plan_${monthKey}`);
-                if (local) appState = JSON.parse(local);
-                else appState = JSON.parse(JSON.stringify(defaultState));
+                const localCurrent = localStorage.getItem(`plan_${monthKey}`);
+                if (localCurrent) {
+                    appState = JSON.parse(localCurrent);
+                } else {
+                    appState = JSON.parse(JSON.stringify(defaultState));
+                }
                 updateSyncBadge('offline');
             }
 
+            ensureDefaultGroceries();
             populateModalFromState();
             renderDashboard();
         }
@@ -1029,18 +1108,30 @@
                     goalsAdvTotal += advShare;
                     goalsSalTotal += salShare;
 
+                    const savedAmount = goal.saved || 0;
+                    const pctGoal = goal.target > 0 ? Math.min(100, Math.round((savedAmount / goal.target) * 100)) : 0;
+
                     const div = document.createElement('div');
                     div.className = 'goal-item-view';
+                    div.style.cssText = 'display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border);';
                     div.innerHTML = `
-                        <div class="goal-info">
-                            <h4>${goal.name}</h4>
-                            <p>Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.</p>
-                            <div class="goal-split-badges">
-                                <span class="split-badge">Аванс: ${fmt(advShare)}</span>
-                                <span class="split-badge">ЗП: ${fmt(salShare)}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div class="goal-info">
+                                <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800;">${goal.name}</h4>
+                                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.</p>
+                                <div class="goal-split-badges" style="margin-top: 0.3rem;">
+                                    <span class="split-badge">Аванс: ${fmt(advShare)}</span>
+                                    <span class="split-badge">ЗП: ${fmt(salShare)}</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="goal-monthly">${fmt(monthly)}/мес</div>
+                                <div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; margin-top: 0.25rem;">${fmt(savedAmount)} (${pctGoal}%)</div>
                             </div>
                         </div>
-                        <div class="goal-monthly">${fmt(monthly)}/мес</div>
+                        <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.2rem;">
+                            <div style="width: ${pctGoal}%; height: 100%; background: var(--accent); transition: var(--transition);"></div>
+                        </div>
                     `;
                     goalsListEl.appendChild(div);
                 });
@@ -1218,7 +1309,14 @@
                 return;
             }
             
-            appState.groceries.slice().reverse().forEach(item => {
+            // Unchecked (done: false) items stay ABOVE completed ones
+            const sortedGroceries = appState.groceries.slice().sort((a, b) => {
+                const aDone = a.done ? 1 : 0;
+                const bDone = b.done ? 1 : 0;
+                return aDone - bDone;
+            });
+
+            sortedGroceries.forEach(item => {
                 const div = document.createElement('div');
                 div.className = `item-row ${item.done ? 'done' : ''}`;
                 div.innerHTML = `
@@ -1252,8 +1350,9 @@
                 id: Date.now(),
                 name: name,
                 amount: amount,
-                done: true,
-                date: new Date().toLocaleDateString('ru-RU')
+                done: false,
+                date: new Date().toLocaleDateString('ru-RU'),
+                fromTBank: false
             });
             
             nameEl.value = '';
@@ -1325,7 +1424,16 @@
                 return;
             }
             
-            appState.wants.slice().reverse().forEach(item => {
+            // Unchecked (done: false) items stay ABOVE completed ones
+            const sortedWants = appState.wants.slice().sort((a, b) => {
+                const aDone = a.done ? 1 : 0;
+                const bDone = b.done ? 1 : 0;
+                if (aDone !== bDone) return aDone - bDone;
+                const pRank = { 'Высокий': 1, 'Средний': 2, 'Обычный': 3 };
+                return (pRank[a.priority] || 3) - (pRank[b.priority] || 3);
+            });
+
+            sortedWants.forEach(item => {
                 let pClass = 'low';
                 let pText = '💡 Обычный';
                 if (item.priority === 'Высокий') { pClass = 'high'; pText = '🔥 Высокий'; }
