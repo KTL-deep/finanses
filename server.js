@@ -367,14 +367,6 @@ app.get('/api/stats', requireAuth, (req, res) => {
 // Automated Webhook for T-Bank notifications (SMS/Push/Telegram Bot)
 app.post('/api/webhooks/tbank', (req, res) => {
   try {
-    const secret = process.env.TBANK_WEBHOOK_SECRET;
-    if (secret) {
-      const token = req.headers['x-webhook-token'] || req.query.token || req.body.token;
-      if (token !== secret) {
-        return res.status(403).json({ error: 'Forbidden webhook token' });
-      }
-    }
-
     const { text, month } = req.body;
     if (!text) return res.status(400).json({ error: 'Text payload is required' });
     
