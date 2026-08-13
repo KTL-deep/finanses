@@ -390,6 +390,91 @@
         }
         .clickable-card { cursor: pointer; transition: var(--transition); }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: var(--text); }
+
+        /* AUTH OVERLAY STYLES */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(17, 17, 17, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 1.5rem;
+        }
+        .auth-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .auth-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 2.5rem;
+            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            transform: scale(0.92);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .auth-overlay.active .auth-card {
+            transform: scale(1);
+        }
+        .auth-header { margin-bottom: 1.5rem; }
+        .auth-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .auth-title { font-size: 1.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.03em; margin: 0 0 0.3rem 0; color: var(--text); }
+        .auth-subtitle { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 0; }
+
+        .auth-user-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            background: #f4f4f4;
+            padding: 0.4rem;
+            border-radius: 16px;
+        }
+        .user-select-pill {
+            background: transparent;
+            border: none;
+            padding: 0.75rem 0.5rem;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+        }
+        .user-select-pill.active {
+            background: var(--surface);
+            color: var(--text);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .auth-error-box {
+            background: #fce8e6;
+            color: #c5221f;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: left;
+            border: 1px solid #f5c6cb;
+        }
     </style>
 </head>
 <body>
@@ -412,6 +497,11 @@
             </div>
             
             <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <div id="user-profile-badge" style="display: none; align-items: center; gap: 0.5rem; background: var(--surface); border: 2px solid var(--border); padding: 0.4rem 0.85rem; border-radius: 50px; font-size: 0.85rem; font-weight: 800;">
+                    <span id="user-display-name">👤 User</span>
+                    <button class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.7rem; border-radius: 20px;" onclick="openChangePasswordModal()" title="Сменить пароль">🔑</button>
+                    <button class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.7rem; border-radius: 20px; color: var(--accent); border-color: var(--accent);" onclick="logoutUser()" title="Выйти из аккаунта">🚪</button>
+                </div>
                 <button class="btn-secondary" onclick="openMemoModal()" title="Памятка по распределению финансов">Памятка 💡</button>
                 <button class="btn-secondary" onclick="openStatsModal()">Статистика 📊</button>
                 <button class="btn-primary" onclick="openModal()">Настроить месяц ⚙️</button>
@@ -1030,6 +1120,81 @@
         </div>
     </div>
 
+    <!-- AUTHENTICATION OVERLAY -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-icon">🔐</div>
+                <h2 class="auth-title">Семейный доступ</h2>
+                <p class="auth-subtitle">Финансовая архитектура | Timur & Lera</p>
+            </div>
+            
+            <form id="authLoginForm" onsubmit="handleLoginSubmit(event)" style="margin-top: 1.5rem;">
+                <div class="auth-user-selector">
+                    <button type="button" class="user-select-pill active" id="user-pill-timur" onclick="selectAuthUser('timur')">
+                        <span style="font-size: 1.2rem;">👤</span>
+                        <span>Тимур</span>
+                    </button>
+                    <button type="button" class="user-select-pill" id="user-pill-lera" onclick="selectAuthUser('lera')">
+                        <span style="font-size: 1.2rem;">🌸</span>
+                        <span>Лера</span>
+                    </button>
+                </div>
+
+                <input type="hidden" id="authUsername" value="timur">
+
+                <div style="margin-bottom: 1.25rem; text-align: left;">
+                    <label for="authPassword" style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem;">Пароль доступа</label>
+                    <div style="position: relative;">
+                        <input type="password" id="authPassword" required placeholder="Введите ваш пароль" style="width: 100%; padding: 0.9rem 2.8rem 0.9rem 1rem; border: 2px solid var(--border); border-radius: 14px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; background: #f9f9f9; outline: none; transition: var(--transition);" onfocus="this.style.borderColor='var(--text)'; this.style.background='#ffffff';" onblur="this.style.borderColor='var(--border)';" />
+                        <button type="button" onclick="togglePasswordVisibility('authPassword', this)" style="position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.6;" title="Показать/скрыть пароль">👁️</button>
+                    </div>
+                </div>
+
+                <div id="authErrorMsg" class="auth-error-box" style="display: none;"></div>
+
+                <button type="submit" id="authSubmitBtn" class="btn-primary" style="width: 100%; padding: 1rem; font-size: 0.95rem; justify-content: center; margin-top: 0.5rem;">
+                    Войти в систему ➔
+                </button>
+
+                <div style="margin-top: 1.25rem; padding: 0.85rem; background: rgba(0,0,0,0.03); border-radius: 12px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; text-align: center;">
+                    💡 <b>Первый вход:</b> пароль совпадает с логином (<code>timur</code> для Тимура, <code>lera</code> для Леры). После входа вы сможете изменить пароль в профиле.
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CHANGE PASSWORD MODAL -->
+    <div id="changePasswordModal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title">🔑 Смена пароля</h3>
+                <button class="modal-close" onclick="closeChangePasswordModal()">×</button>
+            </div>
+            <form onsubmit="handleChangePasswordSubmit(event)">
+                <div class="modal-body" style="grid-template-columns: 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Текущий пароль</label>
+                        <input type="password" id="currentPasswordInput" required style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Введите текущий пароль" />
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Новый пароль</label>
+                        <input type="password" id="newPasswordInput" required minlength="4" style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Минимум 4 символа" />
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Подтвердите новый пароль</label>
+                        <input type="password" id="confirmNewPasswordInput" required minlength="4" style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Повторите новый пароль" />
+                    </div>
+                    <div id="changePasswordError" class="auth-error-box" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeChangePasswordModal()">Отмена</button>
+                    <button type="submit" class="btn-primary">Сохранить новый пароль</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Default Mandatory Groceries Template
         const defaultGroceriesTemplate = [
@@ -1189,6 +1354,10 @@
             
             try {
                 const res = await fetch(`/api/plans/${monthKey}`);
+                if (res.status === 401) {
+                    showLoginOverlay();
+                    return;
+                }
                 if (res.ok) {
                     const data = await res.json();
                     appState = sanitizeState(data.state);
@@ -1196,6 +1365,10 @@
                 } else if (res.status === 404) {
                     const prevKey = getPrevMonthKey(monthKey);
                     const prevRes = await fetch(`/api/plans/${prevKey}`);
+                    if (prevRes.status === 401) {
+                        showLoginOverlay();
+                        return;
+                    }
                     
                     if (prevRes.ok) {
                         const prevData = await prevRes.json();
@@ -1256,6 +1429,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ state: appState })
                 });
+                if (res.status === 401) {
+                    showLoginOverlay();
+                    return;
+                }
                 if (res.ok) {
                     updateSyncBadge('synced');
                 } else {
@@ -2065,6 +2242,11 @@
 
             try {
                 const res = await fetch('/api/stats');
+                if (res.status === 401) {
+                    document.getElementById('statsModal').classList.remove('active');
+                    showLoginOverlay();
+                    return;
+                }
                 if (!res.ok) throw new Error("Failed to fetch stats");
                 
                 const data = await res.json();
@@ -2416,11 +2598,172 @@
             renderDashboard();
         }
 
+        // AUTHENTICATION SCRIPT LOGIC
+        let currentUser = null;
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/me');
+                const data = await res.json();
+                if (data.authenticated && data.user) {
+                    currentUser = data.user;
+                    updateUserProfileUI();
+                    hideLoginOverlay();
+                    return true;
+                } else {
+                    currentUser = null;
+                    showLoginOverlay();
+                    return false;
+                }
+            } catch (err) {
+                console.error("Auth check failed:", err);
+                showLoginOverlay();
+                return false;
+            }
+        }
+
+        function showLoginOverlay() {
+            document.getElementById('authOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideLoginOverlay() {
+            document.getElementById('authOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function selectAuthUser(username) {
+            document.getElementById('authUsername').value = username;
+            document.getElementById('user-pill-timur').classList.toggle('active', username === 'timur');
+            document.getElementById('user-pill-lera').classList.toggle('active', username === 'lera');
+            document.getElementById('authPassword').focus();
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.innerText = '🙈';
+            } else {
+                input.type = 'password';
+                btn.innerText = '👁️';
+            }
+        }
+
+        async function handleLoginSubmit(event) {
+            event.preventDefault();
+            const username = document.getElementById('authUsername').value;
+            const password = document.getElementById('authPassword').value;
+            const errBox = document.getElementById('authErrorMsg');
+            const submitBtn = document.getElementById('authSubmitBtn');
+
+            errBox.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Проверка...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    currentUser = data.user;
+                    updateUserProfileUI();
+                    hideLoginOverlay();
+                    document.getElementById('authPassword').value = '';
+                    loadPlan();
+                } else {
+                    errBox.innerText = data.error || 'Неверный логин или пароль';
+                    errBox.style.display = 'block';
+                }
+            } catch (err) {
+                errBox.innerText = 'Ошибка соединения с сервером';
+                errBox.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Войти в систему ➔';
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch(err) {
+                console.warn("Logout request failed:", err);
+            }
+            currentUser = null;
+            updateUserProfileUI();
+            showLoginOverlay();
+        }
+
+        function updateUserProfileUI() {
+            const badge = document.getElementById('user-profile-badge');
+            const nameEl = document.getElementById('user-display-name');
+            if (currentUser) {
+                nameEl.innerText = `👤 ${currentUser.name}`;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordError').style.display = 'none';
+            document.getElementById('currentPasswordInput').value = '';
+            document.getElementById('newPasswordInput').value = '';
+            document.getElementById('confirmNewPasswordInput').value = '';
+            document.getElementById('changePasswordModal').classList.add('active');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('active');
+        }
+
+        async function handleChangePasswordSubmit(event) {
+            event.preventDefault();
+            const currentPassword = document.getElementById('currentPasswordInput').value;
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmNewPasswordInput').value;
+            const errBox = document.getElementById('changePasswordError');
+
+            if (newPassword !== confirmPassword) {
+                errBox.innerText = 'Новые пароли не совпадают';
+                errBox.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    alert('✅ Пароль успешно изменен!');
+                    closeChangePasswordModal();
+                } else {
+                    errBox.innerText = data.error || 'Ошибка при изменении пароля';
+                    errBox.style.display = 'block';
+                }
+            } catch (err) {
+                errBox.innerText = 'Ошибка подключения к серверу';
+                errBox.style.display = 'block';
+            }
+        }
+
         // Initialize on Load
-        window.onload = () => {
+        window.onload = async () => {
             updateSecretAmpUI();
             updateMonthDisplay();
-            loadPlan();
+            const authed = await checkAuth();
+            if (authed) {
+                loadPlan();
+            }
         };
     </script>
 </body>
