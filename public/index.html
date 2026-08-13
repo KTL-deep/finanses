@@ -1471,10 +1471,7 @@
             // Dynamic Ratio Coefficient based on Net Cash Flows (Income - Mandatory Bills)
             const { rAdv, rSal } = calcGoalsRatio(incAdv, comm, incSal, rent);
 
-            // Filter goals: hide secret goals unless admin mode is unlocked via &
-            const activeGoals = (appState.goals || []).filter(g => isAdminMode || !g.isSecret);
-
-            // Goals calculation
+            // Goals calculation (ALWAYS include all goals in budget deduction)
             let totalMonthlyGoals = 0;
             let goalsAdvTotal = 0;
             let goalsSalTotal = 0;
@@ -1482,11 +1479,13 @@
             const goalsListEl = document.getElementById('goals-view-list');
             goalsListEl.innerHTML = '';
             
-            if (activeGoals.length === 0) {
+            const allGoals = appState.goals || [];
+            
+            if (allGoals.length === 0) {
                 document.getElementById('no-goals-msg').style.display = 'block';
             } else {
                 document.getElementById('no-goals-msg').style.display = 'none';
-                activeGoals.forEach(goal => {
+                allGoals.forEach(goal => {
                     const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
                     const monthly = Math.round(rawMonthly / 100) * 100;
                     
@@ -1501,6 +1500,16 @@
                     const savedAmount = goal.saved || 0;
                     const pctGoal = goal.target > 0 ? Math.min(100, Math.round((savedAmount / goal.target) * 100)) : 0;
 
+                    const isMaskedSecret = goal.isSecret && !isAdminMode;
+                    const goalName = isMaskedSecret ? '🔒 Скрытая цель' : goal.name;
+                    const goalSubtitle = isMaskedSecret ? 'Персональные накопительные сбережения' : `Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.`;
+                    const savedText = isMaskedSecret ? '' : `<div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; margin-top: 0.25rem;">${fmt(savedAmount)} (${pctGoal}%)</div>`;
+                    const progressBar = isMaskedSecret ? '' : `
+                        <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.2rem;">
+                            <div style="width: ${pctGoal}%; height: 100%; background: var(--accent); transition: var(--transition);"></div>
+                        </div>
+                    `;
+
                     const div = document.createElement('div');
                     div.className = 'goal-item-view';
                     div.style.cssText = 'display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border);';
@@ -1508,10 +1517,10 @@
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div class="goal-info">
                                 <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
-                                    <span>${goal.name}</span>
-                                    ${goal.isSecret ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
+                                    <span>${goalName}</span>
+                                    ${(goal.isSecret && isAdminMode) ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
                                 </h4>
-                                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">${goalSubtitle}</p>
                                 <div class="goal-split-badges" style="margin-top: 0.3rem;">
                                     <span class="split-badge">Аванс: ${fmt(advShare)}</span>
                                     <span class="split-badge">ЗП: ${fmt(salShare)}</span>
@@ -1519,12 +1528,10 @@
                             </div>
                             <div style="text-align: right;">
                                 <div class="goal-monthly">${fmt(monthly)}/мес</div>
-                                <div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; margin-top: 0.25rem;">${fmt(savedAmount)} (${pctGoal}%)</div>
+                                ${savedText}
                             </div>
                         </div>
-                        <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.2rem;">
-                            <div style="width: ${pctGoal}%; height: 100%; background: var(--accent); transition: var(--transition);"></div>
-                        </div>
+                        ${progressBar}
                     `;
                     goalsListEl.appendChild(div);
                 });
