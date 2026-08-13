@@ -481,13 +481,7 @@
             </div>
             
             <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                <div id="user-profile-badge" style="display: none; align-items: center; gap: 0.5rem;">
-                    <button class="btn-secondary" onclick="openChangePasswordModal()" title="Нажмите, чтобы сменить пароль" style="padding: 0.4rem 0.9rem; border-radius: 50px; font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
-                        <span id="user-display-name">👤 User</span>
-                        <span style="font-size: 0.75rem; opacity: 0.7;">🔑</span>
-                    </button>
-                    <button class="btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; border-radius: 50px; color: var(--accent); border-color: var(--accent);" onclick="logoutUser()" title="Выйти из аккаунта">🚪 Выйти</button>
-                </div>
+                <button class="btn-secondary" id="user-profile-btn" style="display: none;" onclick="openProfileModal()" title="Личный кабинет">👤 Профиль</button>
                 <button class="btn-secondary" onclick="openMemoModal()" title="Памятка по распределению финансов">Памятка 💡</button>
                 <button class="btn-secondary" onclick="openStatsModal()">Статистика 📊</button>
                 <button class="btn-primary" onclick="openModal()">Настроить месяц ⚙️</button>
@@ -1157,34 +1151,54 @@
         </div>
     </div>
 
-    <!-- CHANGE PASSWORD MODAL -->
-    <div id="changePasswordModal" class="modal-backdrop">
-        <div class="modal-content" style="max-width: 440px;">
+    <!-- PERSONAL CABINET / PROFILE MODAL -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-content" style="max-width: 480px;">
             <div class="modal-header">
-                <h3 class="modal-title">🔑 Смена пароля</h3>
-                <button class="modal-close" onclick="closeChangePasswordModal()">×</button>
+                <h2>Личный кабинет</h2>
+                <button class="close-btn" onclick="closeProfileModal()">&times;</button>
             </div>
-            <form onsubmit="handleChangePasswordSubmit(event)">
-                <div class="modal-body" style="grid-template-columns: 1fr; gap: 1rem;">
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.5rem; padding: 1.75rem;">
+                <!-- User Status Card -->
+                <div style="background: var(--bg); padding: 1.25rem; border-radius: 16px; display: flex; align-items: center; justify-content: space-between;">
                     <div>
-                        <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Текущий пароль</label>
-                        <input type="password" id="currentPasswordInput" required style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Введите текущий пароль" />
+                        <div class="stat-label" style="font-size: 0.7rem;">Активный пользователь</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: var(--text);" id="profile-user-fullname">👤 User</div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-top: 0.1rem;" id="profile-user-role">Семейный доступ</div>
                     </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Новый пароль</label>
-                        <input type="password" id="newPasswordInput" required minlength="4" style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Минимум 4 символа" />
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Подтвердите новый пароль</label>
-                        <input type="password" id="confirmNewPasswordInput" required minlength="4" style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Повторите новый пароль" />
-                    </div>
-                    <div id="changePasswordError" class="auth-error-box" style="display: none;"></div>
+                    <div style="font-size: 2.2rem;" id="profile-avatar-icon">👤</div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeChangePasswordModal()">Отмена</button>
-                    <button type="submit" class="btn-primary">Сохранить новый пароль</button>
+
+                <!-- Password Change Form -->
+                <div class="form-section" style="padding: 1.25rem;">
+                    <div class="form-title" style="margin-bottom: 1rem;">🔑 Смена пароля</div>
+                    <form onsubmit="handleProfileChangePassword(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Текущий пароль</label>
+                            <input type="password" id="profileCurrentPassword" required style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Введите текущий пароль" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Новый пароль</label>
+                            <input type="password" id="profileNewPassword" required minlength="4" style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Минимум 4 символа" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Подтвердите новый пароль</label>
+                            <input type="password" id="profileConfirmPassword" required minlength="4" style="width: 100%; padding: 0.8rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95rem;" placeholder="Повторите новый пароль" />
+                        </div>
+                        
+                        <div id="profilePasswordError" class="auth-error-box" style="display: none;"></div>
+                        <div id="profilePasswordSuccess" style="display: none; background: #e6f4ea; color: #137333; padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.85rem; font-weight: 700; border: 1px solid #c3e6cb;">✅ Пароль успешно изменен!</div>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 0.5rem; justify-content: center;">Сохранить новый пароль</button>
+                    </form>
                 </div>
-            </form>
+
+                <!-- Logout Section -->
+                <div style="padding-top: 0.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">Завершить сеанс работы</span>
+                    <button class="btn-secondary" style="color: var(--accent); border-color: var(--accent);" onclick="closeProfileModal(); logoutUser();">🚪 Выйти из аккаунта</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2752,34 +2766,46 @@
         }
 
         function updateUserProfileUI() {
-            const badge = document.getElementById('user-profile-badge');
-            const nameEl = document.getElementById('user-display-name');
+            const btn = document.getElementById('user-profile-btn');
             if (currentUser) {
-                nameEl.innerText = `👤 ${currentUser.name}`;
-                badge.style.display = 'flex';
+                const icon = currentUser.username === 'lera' ? '🌸' : '👤';
+                btn.innerText = `${icon} ${currentUser.name}`;
+                btn.style.display = 'inline-flex';
             } else {
-                badge.style.display = 'none';
+                btn.style.display = 'none';
             }
         }
 
-        function openChangePasswordModal() {
-            document.getElementById('changePasswordError').style.display = 'none';
-            document.getElementById('currentPasswordInput').value = '';
-            document.getElementById('newPasswordInput').value = '';
-            document.getElementById('confirmNewPasswordInput').value = '';
-            document.getElementById('changePasswordModal').classList.add('active');
+        function openProfileModal() {
+            if (!currentUser) return;
+            const icon = currentUser.username === 'lera' ? '🌸' : '👤';
+            document.getElementById('profile-avatar-icon').innerText = icon;
+            document.getElementById('profile-user-fullname').innerText = `${icon} ${currentUser.name}`;
+            document.getElementById('profile-user-role').innerText = currentUser.username === 'timur' ? 'Администратор (Главный доступ)' : 'Семейный доступ';
+            
+            document.getElementById('profileCurrentPassword').value = '';
+            document.getElementById('profileNewPassword').value = '';
+            document.getElementById('profileConfirmPassword').value = '';
+            document.getElementById('profilePasswordError').style.display = 'none';
+            document.getElementById('profilePasswordSuccess').style.display = 'none';
+
+            document.getElementById('profileModal').classList.add('active');
         }
 
-        function closeChangePasswordModal() {
-            document.getElementById('changePasswordModal').classList.remove('active');
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
         }
 
-        async function handleChangePasswordSubmit(event) {
+        async function handleProfileChangePassword(event) {
             event.preventDefault();
-            const currentPassword = document.getElementById('currentPasswordInput').value;
-            const newPassword = document.getElementById('newPasswordInput').value;
-            const confirmPassword = document.getElementById('confirmNewPasswordInput').value;
-            const errBox = document.getElementById('changePasswordError');
+            const currentPassword = document.getElementById('profileCurrentPassword').value;
+            const newPassword = document.getElementById('profileNewPassword').value;
+            const confirmPassword = document.getElementById('profileConfirmPassword').value;
+            const errBox = document.getElementById('profilePasswordError');
+            const succBox = document.getElementById('profilePasswordSuccess');
+
+            errBox.style.display = 'none';
+            succBox.style.display = 'none';
 
             if (newPassword !== confirmPassword) {
                 errBox.innerText = 'Новые пароли не совпадают';
@@ -2796,8 +2822,10 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    alert('✅ Пароль успешно изменен!');
-                    closeChangePasswordModal();
+                    succBox.style.display = 'block';
+                    document.getElementById('profileCurrentPassword').value = '';
+                    document.getElementById('profileNewPassword').value = '';
+                    document.getElementById('profileConfirmPassword').value = '';
                 } else {
                     errBox.innerText = data.error || 'Ошибка при изменении пароля';
                     errBox.style.display = 'block';
