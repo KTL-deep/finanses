@@ -372,22 +372,6 @@
             cursor: pointer; padding: 0 0.3rem; opacity: 0.3; transition: var(--transition);
         }
         .item-pin-btn:hover { opacity: 0.8; transform: scale(1.15); }
-        .item-pin-btn.active { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
-        .secret-amp {
-            cursor: pointer;
-            user-select: none;
-            transition: var(--transition);
-            display: inline-block;
-            padding: 0 0.15rem;
-        }
-        .secret-amp:hover {
-            color: var(--accent);
-            transform: scale(1.2);
-        }
-        .secret-amp.active-admin {
-            color: var(--accent);
-            text-shadow: 0 0 10px rgba(147, 23, 23, 0.4);
-        }
         .clickable-card { cursor: pointer; transition: var(--transition); }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: var(--text); }
 
@@ -482,7 +466,7 @@
     <div class="dashboard">
         <header>
             <div>
-                <div class="hero-title">Timur <span id="secret-amp" class="secret-amp" onclick="toggleSecretMode()" title="Timur & Lera">&</span> Lera</div>
+                <div class="hero-title">Timur & Lera</div>
                 <div class="hero-subtitle">Двухфазная архитектура семейного бюджета</div>
                 
                 <div class="month-picker-container">
@@ -1226,7 +1210,10 @@
         let chartInst = null;
         let historyChartInst = null;
         let currentDate = new Date();
-        let isAdminMode = localStorage.getItem('fin_admin_mode') === 'true';
+
+        function isAdmin() {
+            return currentUser && currentUser.username === 'timur';
+        }
 
         const fmt = (num) => Math.round(num || 0).toLocaleString('ru-RU') + ' ₽';
         const fmtBig = (num) => Math.round(num || 0).toLocaleString('ru-RU');
@@ -1500,7 +1487,7 @@
                     const savedAmount = goal.saved || 0;
                     const pctGoal = goal.target > 0 ? Math.min(100, Math.round((savedAmount / goal.target) * 100)) : 0;
 
-                    const isMaskedSecret = goal.isSecret && !isAdminMode;
+                    const isMaskedSecret = goal.isSecret && !isAdmin();
                     const goalName = isMaskedSecret ? '🔒 Скрытая цель' : goal.name;
                     const goalSubtitle = isMaskedSecret ? 'Персональные накопительные сбережения' : `Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.`;
                     const savedText = isMaskedSecret ? '' : `<div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; margin-top: 0.25rem;">${fmt(savedAmount)} (${pctGoal}%)</div>`;
@@ -1518,7 +1505,7 @@
                             <div class="goal-info">
                                 <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
                                     <span>${goalName}</span>
-                                    ${(goal.isSecret && isAdminMode) ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
+                                    ${(goal.isSecret && isAdmin()) ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
                                 </h4>
                                 <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">${goalSubtitle}</p>
                                 <div class="goal-split-badges" style="margin-top: 0.3rem;">
@@ -2118,27 +2105,6 @@
             appState.distPct.save = parseFloat(document.getElementById('in-pct-save').value) || 0;
         }
 
-        function toggleSecretMode() {
-            isAdminMode = !isAdminMode;
-            localStorage.setItem('fin_admin_mode', isAdminMode ? 'true' : 'false');
-            updateSecretAmpUI();
-            renderDashboard();
-            if (document.getElementById('settingsModal').classList.contains('active')) {
-                renderModalGoals();
-            }
-        }
-
-        function updateSecretAmpUI() {
-            const amp = document.getElementById('secret-amp');
-            if (amp) {
-                if (isAdminMode) {
-                    amp.classList.add('active-admin');
-                } else {
-                    amp.classList.remove('active-admin');
-                }
-            }
-        }
-
         function triggerUpdate() {
             const p1 = parseFloat(document.getElementById('in-pct-groc').value) || 0;
             const p2 = parseFloat(document.getElementById('in-pct-wants').value) || 0;
@@ -2191,8 +2157,9 @@
         function renderModalGoals() {
             const container = document.getElementById('modal-goals-container');
             container.innerHTML = '';
+            const adminMode = isAdmin();
             appState.goals.forEach((goal, index) => {
-                if (!isAdminMode && goal.isSecret) return;
+                if (!adminMode && goal.isSecret) return;
 
                 const card = document.createElement('div');
                 card.className = 'goal-edit-card';
@@ -2209,10 +2176,10 @@
                             <input type="number" style="width: 100%; text-align: left;" value="${goal.months}" oninput="updateGoal(${index}, 'months', this.value)">
                         </div>
                     </div>
-                    ${isAdminMode ? `
+                    ${adminMode ? `
                     <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); cursor: pointer; margin-top: 0.6rem;">
                         <input type="checkbox" ${goal.isSecret ? 'checked' : ''} onchange="toggleGoalSecret(${index}, this.checked)">
-                        🔒 Скрытая цель (видимость по клику на &)
+                        🔒 Скрытая цель (полная видимость только под аккаунтом Тимура)
                     </label>` : ''}
                 `;
                 container.appendChild(card);
@@ -2765,7 +2732,6 @@
 
         // Initialize on Load
         window.onload = async () => {
-            updateSecretAmpUI();
             updateMonthDisplay();
             const authed = await checkAuth();
             if (authed) {
