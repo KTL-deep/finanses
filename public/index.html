@@ -481,10 +481,12 @@
             </div>
             
             <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                <div id="user-profile-badge" style="display: none; align-items: center; gap: 0.5rem; background: var(--surface); border: 2px solid var(--border); padding: 0.4rem 0.85rem; border-radius: 50px; font-size: 0.85rem; font-weight: 800;">
-                    <span id="user-display-name">👤 User</span>
-                    <button class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.7rem; border-radius: 20px;" onclick="openChangePasswordModal()" title="Сменить пароль">🔑</button>
-                    <button class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.7rem; border-radius: 20px; color: var(--accent); border-color: var(--accent);" onclick="logoutUser()" title="Выйти из аккаунта">🚪</button>
+                <div id="user-profile-badge" style="display: none; align-items: center; gap: 0.5rem;">
+                    <button class="btn-secondary" onclick="openChangePasswordModal()" title="Нажмите, чтобы сменить пароль" style="padding: 0.4rem 0.9rem; border-radius: 50px; font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                        <span id="user-display-name">👤 User</span>
+                        <span style="font-size: 0.75rem; opacity: 0.7;">🔑</span>
+                    </button>
+                    <button class="btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; border-radius: 50px; color: var(--accent); border-color: var(--accent);" onclick="logoutUser()" title="Выйти из аккаунта">🚪 Выйти</button>
                 </div>
                 <button class="btn-secondary" onclick="openMemoModal()" title="Памятка по распределению финансов">Памятка 💡</button>
                 <button class="btn-secondary" onclick="openStatsModal()">Статистика 📊</button>
@@ -979,6 +981,13 @@
                             <!-- Unplanned breakdown -->
                         </div>
                     </div>
+
+                    <div class="form-section" style="padding: 1.25rem;">
+                        <div class="form-title">Аналитика Wish-листа (Хотелки по авторам)</div>
+                        <div id="stats-wants-breakdown" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                            <!-- Wishlist breakdown per user -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1467,61 +1476,63 @@
             goalsListEl.innerHTML = '';
             
             const allGoals = appState.goals || [];
+            let visibleGoalsCount = 0;
             
-            if (allGoals.length === 0) {
+            allGoals.forEach(goal => {
+                const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
+                const monthly = Math.round(rawMonthly / 100) * 100;
+                
+                // Proportional goals split based on coefficient
+                const advShare = Math.round((monthly * rAdv) / 100) * 100;
+                const salShare = monthly - advShare;
+
+                // Deduct EVERY goal (including secret ones) from available money totals
+                totalMonthlyGoals += monthly;
+                goalsAdvTotal += advShare;
+                goalsSalTotal += salShare;
+
+                // Secret goals are completely invisible in UI for non-admin users (e.g. Lera)
+                if (goal.isSecret && !isAdmin()) {
+                    return; 
+                }
+
+                visibleGoalsCount++;
+
+                const savedAmount = goal.saved || 0;
+                const pctGoal = goal.target > 0 ? Math.min(100, Math.round((savedAmount / goal.target) * 100)) : 0;
+
+                const div = document.createElement('div');
+                div.className = 'goal-item-view';
+                div.style.cssText = 'display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border);';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="goal-info">
+                            <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                                <span>${goal.name}</span>
+                                ${goal.isSecret ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
+                            </h4>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.</p>
+                            <div class="goal-split-badges" style="margin-top: 0.3rem;">
+                                <span class="split-badge">Аванс: ${fmt(advShare)}</span>
+                                <span class="split-badge">ЗП: ${fmt(salShare)}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="goal-monthly">${fmt(monthly)}/мес</div>
+                            <div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; margin-top: 0.25rem;">${fmt(savedAmount)} (${pctGoal}%)</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.2rem;">
+                        <div style="width: ${pctGoal}%; height: 100%; background: var(--accent); transition: var(--transition);"></div>
+                    </div>
+                `;
+                goalsListEl.appendChild(div);
+            });
+
+            if (visibleGoalsCount === 0) {
                 document.getElementById('no-goals-msg').style.display = 'block';
             } else {
                 document.getElementById('no-goals-msg').style.display = 'none';
-                allGoals.forEach(goal => {
-                    const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
-                    const monthly = Math.round(rawMonthly / 100) * 100;
-                    
-                    // Proportional goals split based on coefficient
-                    const advShare = Math.round((monthly * rAdv) / 100) * 100;
-                    const salShare = monthly - advShare;
-
-                    totalMonthlyGoals += monthly;
-                    goalsAdvTotal += advShare;
-                    goalsSalTotal += salShare;
-
-                    const savedAmount = goal.saved || 0;
-                    const pctGoal = goal.target > 0 ? Math.min(100, Math.round((savedAmount / goal.target) * 100)) : 0;
-
-                    const isMaskedSecret = goal.isSecret && !isAdmin();
-                    const goalName = isMaskedSecret ? '🔒 Скрытая цель' : goal.name;
-                    const goalSubtitle = isMaskedSecret ? 'Персональные накопительные сбережения' : `Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.`;
-                    const savedText = isMaskedSecret ? '' : `<div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; margin-top: 0.25rem;">${fmt(savedAmount)} (${pctGoal}%)</div>`;
-                    const progressBar = isMaskedSecret ? '' : `
-                        <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.2rem;">
-                            <div style="width: ${pctGoal}%; height: 100%; background: var(--accent); transition: var(--transition);"></div>
-                        </div>
-                    `;
-
-                    const div = document.createElement('div');
-                    div.className = 'goal-item-view';
-                    div.style.cssText = 'display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border);';
-                    div.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div class="goal-info">
-                                <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
-                                    <span>${goalName}</span>
-                                    ${(goal.isSecret && isAdmin()) ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
-                                </h4>
-                                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">${goalSubtitle}</p>
-                                <div class="goal-split-badges" style="margin-top: 0.3rem;">
-                                    <span class="split-badge">Аванс: ${fmt(advShare)}</span>
-                                    <span class="split-badge">ЗП: ${fmt(salShare)}</span>
-                                </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div class="goal-monthly">${fmt(monthly)}/мес</div>
-                                ${savedText}
-                            </div>
-                        </div>
-                        ${progressBar}
-                    `;
-                    goalsListEl.appendChild(div);
-                });
             }
 
             // Phase 1 (Advance) Calculations
@@ -1862,15 +1873,19 @@
                 if (item.priority === 'Высокий') { pClass = 'high'; pText = '🔥 Высокий'; }
                 else if (item.priority === 'Средний') { pClass = 'medium'; pText = '⚡ Средний'; }
 
+                const authorDisplayName = item.authorName || (item.authorUsername === 'lera' ? 'Лера' : 'Тимур');
+                const authorIcon = item.authorUsername === 'lera' ? '🌸' : '👤';
+
                 const div = document.createElement('div');
                 div.className = `item-row ${item.done ? 'done' : ''}`;
                 div.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 0.8rem;">
                         <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleWantsItem('${item.id}')">
                         <div>
-                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span>${item.name}</span>
                                 <span class="priority-badge ${pClass}">${pText}</span>
+                                <span class="priority-badge" style="background: #f0f4f8; color: #1a365d; border: 1px solid #cbd5e1;">${authorIcon} ${authorDisplayName}</span>
                             </div>
                             <div class="item-meta">${item.done ? 'Исполнено' : 'В планах'}</div>
                         </div>
@@ -1896,12 +1911,18 @@
             if (!name) return;
             
             if (!appState.wants) appState.wants = [];
+            
+            const authorUsername = currentUser ? currentUser.username : 'timur';
+            const authorName = currentUser ? currentUser.name : 'Тимур';
+
             appState.wants.push({
                 id: Date.now(),
                 name: name,
                 amount: amount,
                 done: false,
-                priority: priority
+                priority: priority,
+                authorUsername: authorUsername,
+                authorName: authorName
             });
             
             nameEl.value = '';
@@ -2357,6 +2378,63 @@
                     `;
                     breakdownEl.appendChild(row);
                 });
+            }
+
+            // Aggregate Wishlist items across history by author (Timur vs Lera)
+            const wantsUserStats = {
+                timur: { name: 'Тимур', icon: '👤', totalCount: 0, totalAmount: 0, doneCount: 0, doneAmount: 0 },
+                lera: { name: 'Лера', icon: '🌸', totalCount: 0, totalAmount: 0, doneCount: 0, doneAmount: 0 }
+            };
+
+            history.forEach(item => {
+                const wantsList = item.state.wants || [];
+                wantsList.forEach(w => {
+                    const authorKey = (w.authorUsername === 'lera' || (w.authorName && w.authorName.toLowerCase().includes('лера'))) ? 'lera' : 'timur';
+                    const stat = wantsUserStats[authorKey];
+                    const amt = w.amount || 0;
+                    stat.totalCount += 1;
+                    stat.totalAmount += amt;
+                    if (w.done) {
+                        stat.doneCount += 1;
+                        stat.doneAmount += amt;
+                    }
+                });
+            });
+
+            const wantsBreakdownEl = document.getElementById('stats-wants-breakdown');
+            if (wantsBreakdownEl) {
+                wantsBreakdownEl.innerHTML = '';
+                
+                const totalWantsCount = wantsUserStats.timur.totalCount + wantsUserStats.lera.totalCount;
+                
+                if (totalWantsCount === 0) {
+                    wantsBreakdownEl.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem 0;">Хотелки пока не добавлены.</div>';
+                } else {
+                    ['timur', 'lera'].forEach(key => {
+                        const st = wantsUserStats[key];
+                        const pctDone = st.totalAmount > 0 ? Math.round((st.doneAmount / st.totalAmount) * 100) : 0;
+                        
+                        const div = document.createElement('div');
+                        div.style.cssText = 'background: var(--bg); padding: 1rem; border-radius: 14px; display: flex; flex-direction: column; gap: 0.5rem;';
+                        div.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>${st.icon} ${st.name}</span>
+                                    <span class="tab-badge" style="background: var(--surface); color: var(--text);">${st.totalCount} хот.</span>
+                                </div>
+                                <div style="font-weight: 900; font-size: 1.1rem; color: var(--text);">${fmt(st.totalAmount)}</div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">
+                                <span>Исполнено: ${st.doneCount} из ${st.totalCount} (${fmt(st.doneAmount)})</span>
+                                <span>${pctDone}%</span>
+                            </div>
+                            <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.2rem;">
+                                <div style="width: ${pctDone}%; height: 100%; background: var(--accent); transition: var(--transition);"></div>
+                            </div>
+                        `;
+                        wantsBreakdownEl.appendChild(div);
+                    });
+                }
             }
         }
 
