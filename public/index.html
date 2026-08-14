@@ -1617,9 +1617,12 @@
             // Increment goal saved amounts by monthly contributions
             if (newState.goals) {
                 newState.goals.forEach(goal => {
-                    const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
+                    const sAmt = parseFloat(goal.saved) || 0;
+                    const tAmt = parseFloat(goal.target) || 0;
+                    const rem = Math.max(0, tAmt - sAmt);
+                    const rawMonthly = goal.months > 0 ? (rem / goal.months) : rem;
                     const monthly = Math.round(rawMonthly / 100) * 100;
-                    goal.saved = (goal.saved || 0) + monthly;
+                    goal.saved = Math.min(tAmt, sAmt + monthly);
                 });
             }
 
@@ -1694,7 +1697,14 @@
                     paidDate: typeof cc.paidDate === 'string' ? cc.paidDate : '',
                     history: Array.isArray(cc.history) ? cc.history : []
                 },
-                goals: Array.isArray(state.goals) ? state.goals : defaultState.goals,
+                goals: Array.isArray(state.goals) ? state.goals.map(g => ({
+                    id: g.id || Date.now(),
+                    name: g.name || 'Цель',
+                    target: typeof g.target === 'number' ? g.target : (parseFloat(g.target) || 0),
+                    saved: typeof g.saved === 'number' ? g.saved : (parseFloat(g.saved) || 0),
+                    months: typeof g.months === 'number' ? g.months : (parseInt(g.months) || 12),
+                    isSecret: !!g.isSecret
+                })) : defaultState.goals,
                 distPct: { ...defaultState.distPct, ...(state.distPct || {}) },
                 groceries: Array.isArray(state.groceries) ? state.groceries : JSON.parse(JSON.stringify(defaultGroceriesTemplate)),
                 wants: Array.isArray(state.wants) ? state.wants : [],
@@ -1877,7 +1887,11 @@
             let visibleGoalsCount = 0;
             
             allGoals.forEach(goal => {
-                const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
+                const targetAmount = parseFloat(goal.target) || 0;
+                const savedAmount = parseFloat(goal.saved) || 0;
+                const remainingToSave = Math.max(0, targetAmount - savedAmount);
+
+                const rawMonthly = goal.months > 0 ? (remainingToSave / goal.months) : remainingToSave;
                 const monthly = Math.round(rawMonthly / 100) * 100;
                 
                 // Proportional goals split based on coefficient
@@ -1896,8 +1910,7 @@
 
                 visibleGoalsCount++;
 
-                const savedAmount = goal.saved || 0;
-                const pctGoal = goal.target > 0 ? Math.min(100, Math.round((savedAmount / goal.target) * 100)) : 0;
+                const pctGoal = targetAmount > 0 ? Math.min(100, Math.round((savedAmount / targetAmount) * 100)) : 0;
 
                 const div = document.createElement('div');
                 div.className = 'goal-item-view';
@@ -1909,7 +1922,9 @@
                                 <span>${goal.name}</span>
                                 ${goal.isSecret ? '<span style="font-size: 0.7rem; background: #fef2f2; color: var(--accent); padding: 0.1rem 0.45rem; border-radius: 6px; font-weight: 800;">🔒 Скрытая</span>' : ''}
                             </h4>
-                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Цель: ${fmt(goal.target)} | Срок: ${goal.months} мес.</p>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+                                Цель: ${fmt(targetAmount)} | Срок: ${goal.months} мес. ${savedAmount > 0 ? `| Накоплено: <b style="color: var(--text);">${fmt(savedAmount)}</b> (Осталось: ${fmt(remainingToSave)})` : ''}
+                            </p>
                             <div class="goal-split-badges" style="margin-top: 0.3rem;">
                                 <span class="split-badge">Аванс: ${fmt(advShare)}</span>
                                 <span class="split-badge">ЗП: ${fmt(salShare)}</span>
@@ -2722,7 +2737,10 @@
             let goalsAdvTotal = 0;
             let goalsSalTotal = 0;
             appState.goals.forEach(goal => {
-                const rawMonthly = goal.months > 0 ? (goal.target / goal.months) : goal.target;
+                const targetAmount = parseFloat(goal.target) || 0;
+                const savedAmount = parseFloat(goal.saved) || 0;
+                const remainingToSave = Math.max(0, targetAmount - savedAmount);
+                const rawMonthly = goal.months > 0 ? (remainingToSave / goal.months) : remainingToSave;
                 const monthly = Math.round(rawMonthly / 100) * 100;
                 const advShare = Math.round((monthly * rAdv) / 100) * 100;
                 const salShare = monthly - advShare;
@@ -2747,20 +2765,33 @@
             appState.goals.forEach((goal, index) => {
                 if (!adminMode && goal.isSecret) return;
 
+                const targetVal = parseFloat(goal.target) || 0;
+                const savedVal = parseFloat(goal.saved) || 0;
+                const remainingVal = Math.max(0, targetVal - savedVal);
+                const monthsVal = parseInt(goal.months) || 1;
+                const monthlyEstimate = monthsVal > 0 ? Math.round((remainingVal / monthsVal) / 100) * 100 : remainingVal;
+
                 const card = document.createElement('div');
                 card.className = 'goal-edit-card';
                 card.innerHTML = `
                     <button class="delete-goal" onclick="deleteGoal(${index})" title="Удалить цель">&times;</button>
                     <input type="text" placeholder="Название цели" value="${goal.name}" oninput="updateGoal(${index}, 'name', this.value)">
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <div style="flex: 2; min-width: 120px;">
-                            <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.3rem; display: block;">Сумма (₽)</label>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <div style="flex: 2; min-width: 110px;">
+                            <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.3rem; display: block;">Сумма цели (₽)</label>
                             <input type="number" style="width: 100%; text-align: left;" value="${goal.target}" oninput="updateGoal(${index}, 'target', this.value)">
                         </div>
-                        <div style="flex: 1; min-width: 80px;">
+                        <div style="flex: 2; min-width: 110px;">
+                            <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.3rem; display: block;">Уже отложено (₽)</label>
+                            <input type="number" style="width: 100%; text-align: left;" placeholder="0" value="${goal.saved || 0}" oninput="updateGoal(${index}, 'saved', this.value)">
+                        </div>
+                        <div style="flex: 1; min-width: 75px;">
                             <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.3rem; display: block;">Срок (мес)</label>
                             <input type="number" style="width: 100%; text-align: left;" value="${goal.months}" oninput="updateGoal(${index}, 'months', this.value)">
                         </div>
+                    </div>
+                    <div id="goal-est-${index}" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.5rem; background: rgba(0,0,0,0.03); padding: 0.4rem 0.6rem; border-radius: 8px;">
+                        Осталось накопить: <b style="color: var(--text);">${fmt(remainingVal)}</b> ➔ <b style="color: var(--accent);">${fmt(monthlyEstimate)}/мес</b>
                     </div>
                     ${adminMode ? `
                     <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); cursor: pointer; margin-top: 0.6rem;">
@@ -2780,13 +2811,26 @@
         }
 
         function addGoal() {
-            appState.goals.push({ id: Date.now(), name: 'Новая цель', target: 100000, months: 12 });
+            appState.goals.push({ id: Date.now(), name: 'Новая цель', target: 100000, saved: 0, months: 12, isSecret: false });
             renderModalGoals();
             triggerUpdate();
         }
         function updateGoal(index, field, value) {
+            if (!appState.goals[index]) return;
             if (field === 'name') appState.goals[index][field] = value;
             else appState.goals[index][field] = parseFloat(value) || 0;
+
+            const targetVal = parseFloat(appState.goals[index].target) || 0;
+            const savedVal = parseFloat(appState.goals[index].saved) || 0;
+            const remainingVal = Math.max(0, targetVal - savedVal);
+            const monthsVal = parseInt(appState.goals[index].months) || 1;
+            const monthlyEstimate = monthsVal > 0 ? Math.round((remainingVal / monthsVal) / 100) * 100 : remainingVal;
+            
+            const estEl = document.getElementById(`goal-est-${index}`);
+            if (estEl) {
+                estEl.innerHTML = `Осталось накопить: <b style="color: var(--text);">${fmt(remainingVal)}</b> ➔ <b style="color: var(--accent);">${fmt(monthlyEstimate)}/мес</b>`;
+            }
+
             triggerUpdate();
         }
         function deleteGoal(index) {
@@ -2845,7 +2889,10 @@
                 
                 let goalsTot = 0;
                 (state.goals || []).forEach(g => {
-                    const raw = g.months > 0 ? (g.target / g.months) : g.target;
+                    const sAmt = parseFloat(g.saved) || 0;
+                    const tAmt = parseFloat(g.target) || 0;
+                    const rem = Math.max(0, tAmt - sAmt);
+                    const raw = g.months > 0 ? (rem / g.months) : rem;
                     goalsTot += Math.round(raw / 100) * 100;
                 });
                 
