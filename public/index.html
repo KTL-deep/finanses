@@ -306,6 +306,89 @@
             gap: 1rem;
         }
 
+        /* Credit Card Dashboard Alert Card */
+        .credit-card-card {
+            background: linear-gradient(135deg, #1e1e1e 0%, #111111 100%);
+            color: #ffffff;
+            border: 1px solid rgba(147, 23, 23, 0.4);
+            box-shadow: 0 10px 30px rgba(147, 23, 23, 0.15);
+            border-radius: var(--radius);
+            padding: 1.5rem 1.75rem;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        .credit-card-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 6px;
+            background: var(--accent);
+        }
+        .credit-card-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+        }
+        .credit-card-badge {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #ff6b6b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+        .credit-card-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+        }
+        .credit-card-title span {
+            color: #ff8787;
+        }
+        .credit-card-sub {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.25rem;
+        }
+        .credit-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .credit-payoff-btn {
+            background: #931717 !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            padding: 0.85rem 1.6rem !important;
+            border-radius: 50px !important;
+            box-shadow: 0 4px 15px rgba(147, 23, 23, 0.4) !important;
+            transition: var(--transition) !important;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .credit-payoff-btn:hover {
+            background: #b01c1c !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(147, 23, 23, 0.6) !important;
+        }
+        .cc-stats-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.75rem;
+        }
+
         @media(max-width: 1024px) { 
             .span-3, .span-4, .span-6, .span-8 { grid-column: span 6; } 
         }
@@ -321,6 +404,12 @@
             .hero-title { font-size: 2.1rem; }
             .month-picker-container { flex-wrap: wrap; }
             
+            .credit-card-card { padding: 1.25rem 1rem; border-radius: 16px; }
+            .credit-card-inner { flex-direction: column; align-items: stretch; gap: 1rem; }
+            .credit-card-actions { width: 100%; flex-direction: column; gap: 0.5rem; }
+            .credit-card-actions button { width: 100%; justify-content: center; text-align: center; }
+            .cc-stats-summary-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+
             .modal-overlay { padding: 0.5rem; }
             .modal-content { max-height: 94vh; margin: 0 !important; width: 100% !important; max-width: 100% !important; border-radius: 18px; }
             .modal-body { grid-template-columns: 1fr !important; padding: 1rem 0.85rem !important; gap: 1rem; }
@@ -573,6 +662,7 @@
             
             <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
                 <button class="btn-secondary" id="user-profile-btn" style="display: none;" onclick="openProfileModal()" title="Личный кабинет">👤 Профиль</button>
+                <button class="btn-secondary" id="header-cc-btn" onclick="openCreditCardModal()" title="Управление кредитной картой">💳 Кредитка <span id="header-cc-badge" style="display: none; background: var(--accent); color: white; padding: 0.15rem 0.45rem; border-radius: 10px; font-size: 0.7rem; margin-left: 0.3rem;">0 ₽</span></button>
                 <button class="btn-secondary" onclick="openMemoModal()" title="Памятка по распределению финансов">Памятка 💡</button>
                 <button class="btn-secondary" onclick="openStatsModal()">Статистика 📊</button>
                 <button class="btn-primary" onclick="openModal()">Настроить месяц ⚙️</button>
@@ -589,6 +679,25 @@
 
         <!-- VIEW 1: MAIN DASHBOARD -->
         <div id="view-dashboard" class="tab-view" style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; grid-column: span 12;">
+            <!-- CREDIT CARD ACTIVE ALERT & QUICK PAYOFF CARD -->
+            <div id="credit-card-alert" class="span-12 card credit-card-card" style="display: none;">
+                <div class="credit-card-inner">
+                    <div>
+                        <div class="credit-card-badge">💳 Кредитная карта — Требуется закрытие</div>
+                        <div class="credit-card-title">Долг к погашению: <span id="cc-alert-amount">0 ₽</span></div>
+                        <div class="credit-card-sub" id="cc-alert-sub">Списание в 1-ю очередь: Фаза 2 (Зарплата)</div>
+                    </div>
+                    <div class="credit-card-actions">
+                        <button class="btn-primary credit-payoff-btn" id="cc-quick-pay-btn" onclick="quickPayoffCreditCard()">
+                            ✅ Погасить долг
+                        </button>
+                        <button class="btn-secondary" onclick="openCreditCardModal()" style="border-color: rgba(255,255,255,0.4); color: white;">
+                            ⚙️ Управление
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- TOP STATS SUMMARY -->
             <div class="span-4 stat-group">
                 <div class="stat-block">
@@ -620,6 +729,10 @@
                         <span class="label">Доход (Тимур + Лера)</span>
                         <span class="value" id="phase1-inc">0 ₽</span>
                     </div>
+                    <div class="phase-row" id="phase1-credit-row" style="display: none;">
+                        <span class="label">0. Кредитная карта</span>
+                        <span class="value highlight" id="phase1-credit">0 ₽</span>
+                    </div>
                     <div class="phase-row">
                         <span class="label">1. Коммуналка</span>
                         <span class="value" id="phase1-comm">0 ₽</span>
@@ -650,6 +763,10 @@
                     <div class="phase-row">
                         <span class="label">Доход (Тимур + Лера)</span>
                         <span class="value" id="phase2-inc">0 ₽</span>
+                    </div>
+                    <div class="phase-row" id="phase2-credit-row" style="display: none;">
+                        <span class="label">0. Кредитная карта</span>
+                        <span class="value highlight" id="phase2-credit">0 ₽</span>
                     </div>
                     <div class="phase-row">
                         <span class="label">1. Аренда квартиры</span>
@@ -973,6 +1090,33 @@
                         </div>
                     </div>
 
+                    <!-- Credit Card Section -->
+                    <div class="form-section">
+                        <div class="form-title">💳 Кредитная карта</div>
+                        <div class="input-group">
+                            <label>Сумма долга (₽)</label>
+                            <div class="flex-inputs" style="width: auto;">
+                                <input type="number" id="in-cc-amount" placeholder="0" style="width: 140px;" oninput="triggerUpdate()">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Фаза списания</label>
+                            <div class="flex-inputs" style="width: auto;">
+                                <select id="in-cc-phase" onchange="triggerUpdate()" style="width: 160px; padding: 0.55rem 0.6rem; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); outline: none; background: #fff; font-size: 0.85rem;">
+                                    <option value="salary">Фаза 2: Зарплата</option>
+                                    <option value="advance">Фаза 1: Аванс</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="in-cc-paid" onchange="triggerUpdate()" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+                                Долг погашен в этом месяце
+                            </label>
+                            <span id="modal-cc-status-badge" style="font-size: 0.72rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 6px; background: #fef2f2; color: var(--accent);">Ожидает</span>
+                        </div>
+                    </div>
+
                     <!-- Percentages -->
                     <div class="form-section">
                         <div class="form-title">Распределение остатка (%)</div>
@@ -1068,12 +1212,81 @@
                     </div>
 
                     <div class="form-section" style="padding: 1.25rem;">
+                        <div class="form-title">💳 Аналитика кредитной карты (История использования)</div>
+                        <div class="cc-stats-summary-grid" style="margin-bottom: 1rem;">
+                            <div style="background: #ffffff; padding: 1rem; border-radius: 12px; border: 1px solid var(--border); text-align: center;">
+                                <div class="stat-label" style="font-size: 0.7rem;">Всего закрыто по кредитке</div>
+                                <div style="font-size: 1.5rem; font-weight: 900; color: var(--accent); margin-top: 0.3rem;" id="stat-cc-total-paid">0 ₽</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 1rem; border-radius: 12px; border: 1px solid var(--border); text-align: center;">
+                                <div class="stat-label" style="font-size: 0.7rem;">Случаев использования</div>
+                                <div style="font-size: 1.5rem; font-weight: 900; color: var(--text); margin-top: 0.3rem;" id="stat-cc-count">0</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 1rem; border-radius: 12px; border: 1px solid var(--border); text-align: center;">
+                                <div class="stat-label" style="font-size: 0.7rem;">Средний размер долга</div>
+                                <div style="font-size: 1.5rem; font-weight: 900; color: var(--text); margin-top: 0.3rem;" id="stat-cc-avg">0 ₽</div>
+                            </div>
+                        </div>
+                        <div id="stats-cc-history-list" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                            <!-- Credit card history rows -->
+                        </div>
+                    </div>
+
+                    <div class="form-section" style="padding: 1.25rem;">
                         <div class="form-title">Аналитика Wish-листа (Хотелки по авторам)</div>
                         <div id="stats-wants-breakdown" style="display: flex; flex-direction: column; gap: 0.8rem;">
                             <!-- Wishlist breakdown per user -->
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK CREDIT CARD MODAL -->
+    <div class="modal-overlay" id="creditCardModal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>💳 Кредитная карта</h2>
+                <button class="close-btn" onclick="closeCreditCardModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <!-- Status Banner -->
+                <div id="quick-cc-status-box" style="background: #f8f9fa; padding: 1.25rem; border-radius: 16px; border: 1px solid var(--border);">
+                    <div class="stat-label" style="font-size: 0.7rem;" id="quick-cc-label">Текущее состояние</div>
+                    <div style="font-size: 1.8rem; font-weight: 900; color: var(--text); margin-top: 0.25rem;" id="quick-cc-amount-display">0 ₽</div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-top: 0.2rem;" id="quick-cc-phase-display">Списание из Зарплаты</div>
+                    
+                    <button class="btn-primary credit-payoff-btn" id="quick-cc-pay-action-btn" style="width: 100%; margin-top: 1rem; justify-content: center;" onclick="quickPayoffCreditCard(true)">
+                        ✅ Погасить долг сейчас
+                    </button>
+                </div>
+
+                <!-- Edit / Add New Debt Form -->
+                <div class="form-section" style="padding: 1.25rem;">
+                    <div class="form-title" style="margin-bottom: 1rem;">Управление суммой долга</div>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Сумма задолженности (₽)</label>
+                            <input type="number" id="quick-in-cc-amount" placeholder="0" style="width: 100%; text-align: left; padding: 0.75rem 1rem; font-size: 1.1rem;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Из какой фазы списывать?</label>
+                            <select id="quick-in-cc-phase" style="width: 100%; padding: 0.75rem 1rem; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); outline: none; background: #fff; font-size: 0.95rem;">
+                                <option value="salary">Фаза 2: Из Зарплаты (Середина месяца)</option>
+                                <option value="advance">Фаза 1: Из Аванса (Начало месяца)</option>
+                            </select>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; color: var(--text); cursor: pointer; margin-top: 0.25rem;">
+                            <input type="checkbox" id="quick-in-cc-paid" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+                            Долг уже погашен (не списывать из бюджета)
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="gap: 0.75rem;">
+                <button class="btn-secondary" onclick="closeCreditCardModal()">Отмена</button>
+                <button class="btn-primary" onclick="saveCreditCardFromQuickModal()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -1142,6 +1355,12 @@
                 <div class="form-section memo-section">
                     <div class="form-title">2. Приоритеты и категории трат</div>
                     <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.85rem;">
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <span style="font-size: 1.2rem;">💳</span>
+                            <div>
+                                <b>0. Кредитная карта (Первоочередное погашение):</b> При наличии задолженности списывается в приоритетном порядке из выбранной фазы (Аванс или Зарплата) сразу при поступлении дохода. Как только долг погашен — плашка автоматически скрывается с дашборда!
+                            </div>
+                        </div>
                         <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
                             <span style="font-size: 1.2rem;">🎯</span>
                             <div>
@@ -1310,6 +1529,13 @@
         const defaultState = {
             incomes: { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000, extraAdv: 0, extraSal: 0 },
             fixed: { comm: 8000, rent: 32000 },
+            creditCard: {
+                amount: 0,
+                phase: 'salary',
+                isPaid: false,
+                paidDate: '',
+                history: []
+            },
             goals: [
                 { id: 1, name: 'Кольцо', target: 250000, months: 12, saved: 0, isSecret: true },
                 { id: 2, name: 'Отпуск', target: 500000, months: 12, saved: 0, isSecret: false }
@@ -1422,6 +1648,25 @@
             // 3. UNPLANNED (Внеплановые): Reset to empty array for new month!
             newState.unplanned = [];
 
+            // 4. CREDIT CARD: If unpaid, carry forward remaining debt; if paid or 0, reset debt to 0 for new month
+            if (prevState.creditCard && prevState.creditCard.amount > 0 && !prevState.creditCard.isPaid) {
+                newState.creditCard = {
+                    amount: prevState.creditCard.amount,
+                    phase: prevState.creditCard.phase || 'salary',
+                    isPaid: false,
+                    paidDate: '',
+                    history: Array.isArray(prevState.creditCard.history) ? prevState.creditCard.history : []
+                };
+            } else {
+                newState.creditCard = {
+                    amount: 0,
+                    phase: (prevState.creditCard && prevState.creditCard.phase) || 'salary',
+                    isPaid: false,
+                    paidDate: '',
+                    history: (prevState.creditCard && Array.isArray(prevState.creditCard.history)) ? prevState.creditCard.history : []
+                };
+            }
+
             return newState;
         }
 
@@ -1438,9 +1683,17 @@
 
         function sanitizeState(state) {
             if (!state || typeof state !== 'object') return JSON.parse(JSON.stringify(defaultState));
+            const cc = state.creditCard || {};
             return {
                 incomes: { ...defaultState.incomes, ...(state.incomes || {}) },
                 fixed: { ...defaultState.fixed, ...(state.fixed || {}) },
+                creditCard: {
+                    amount: typeof cc.amount === 'number' ? cc.amount : 0,
+                    phase: cc.phase === 'advance' ? 'advance' : 'salary',
+                    isPaid: typeof cc.isPaid === 'boolean' ? cc.isPaid : false,
+                    paidDate: typeof cc.paidDate === 'string' ? cc.paidDate : '',
+                    history: Array.isArray(cc.history) ? cc.history : []
+                },
                 goals: Array.isArray(state.goals) ? state.goals : defaultState.goals,
                 distPct: { ...defaultState.distPct, ...(state.distPct || {}) },
                 groceries: Array.isArray(state.groceries) ? state.groceries : JSON.parse(JSON.stringify(defaultGroceriesTemplate)),
@@ -1569,8 +1822,48 @@
             const comm = appState.fixed.comm || 0;
             const rent = appState.fixed.rent || 0;
 
-            // Dynamic Ratio Coefficient based on Net Cash Flows (Income - Mandatory Bills)
-            const { rAdv, rSal } = calcGoalsRatio(incAdv, comm, incSal, rent);
+            // Credit Card Debt Management
+            const cc = appState.creditCard || { amount: 0, phase: 'salary', isPaid: false, paidDate: '', history: [] };
+            const ccAmount = (typeof cc.amount === 'number' && cc.amount > 0) ? cc.amount : 0;
+            const ccPhase = cc.phase || 'salary';
+            const ccIsPaid = !!cc.isPaid;
+
+            const ccAdv = (ccPhase === 'advance' && ccAmount > 0) ? ccAmount : 0;
+            const ccSal = (ccPhase === 'salary' && ccAmount > 0) ? ccAmount : 0;
+
+            // Dynamic Dashboard Credit Card Alert & Header Badge
+            const alertEl = document.getElementById('credit-card-alert');
+            const headerCcBadge = document.getElementById('header-cc-badge');
+            const ccQuickPayBtn = document.getElementById('cc-quick-pay-btn');
+
+            if (ccAmount > 0 && !ccIsPaid) {
+                if (alertEl) alertEl.style.display = 'block';
+                const amtEl = document.getElementById('cc-alert-amount');
+                if (amtEl) amtEl.innerText = fmt(ccAmount);
+                const subEl = document.getElementById('cc-alert-sub');
+                if (subEl) subEl.innerText = `Списание в 1-ю очередь: ${ccPhase === 'salary' ? 'Фаза 2 (Зарплата)' : 'Фаза 1 (Аванс)'} | Ожидает погашения при поступлении дохода`;
+                if (ccQuickPayBtn) ccQuickPayBtn.innerText = `✅ Погасить долг (${fmt(ccAmount)})`;
+                
+                if (headerCcBadge) {
+                    headerCcBadge.style.display = 'inline-block';
+                    headerCcBadge.innerText = fmt(ccAmount);
+                    headerCcBadge.style.background = 'var(--accent)';
+                }
+            } else {
+                if (alertEl) alertEl.style.display = 'none';
+                if (headerCcBadge) {
+                    if (ccAmount > 0 && ccIsPaid) {
+                        headerCcBadge.style.display = 'inline-block';
+                        headerCcBadge.innerText = 'Погашена ✅';
+                        headerCcBadge.style.background = '#137333';
+                    } else {
+                        headerCcBadge.style.display = 'none';
+                    }
+                }
+            }
+
+            // Dynamic Ratio Coefficient based on Net Cash Flows (Income - Mandatory Bills - Credit Card)
+            const { rAdv, rSal } = calcGoalsRatio(incAdv, comm + ccAdv, incSal, rent + ccSal);
 
             // Goals calculation (ALWAYS include all goals in budget deduction)
             let totalMonthlyGoals = 0;
@@ -1641,15 +1934,15 @@
             }
 
             // Phase 1 (Advance) Calculations
-            const phase1Deductions = comm + goalsAdvTotal;
+            const phase1Deductions = comm + ccAdv + goalsAdvTotal;
             const phase1Free = Math.max(0, incAdv - phase1Deductions);
 
             // Phase 2 (Salary) Calculations
-            const phase2Deductions = rent + goalsSalTotal;
+            const phase2Deductions = rent + ccSal + goalsSalTotal;
             const phase2Free = Math.max(0, incSal - phase2Deductions);
 
             // Total Month Overview
-            const totalFixedAndGoals = comm + rent + totalMonthlyGoals;
+            const totalFixedAndGoals = comm + rent + ccAdv + ccSal + totalMonthlyGoals;
             const totalFree = phase1Free + phase2Free;
 
             // Update Top Stats
@@ -1660,6 +1953,24 @@
             // Update Phase 1 UI
             document.getElementById('phase1-total-badge').innerText = fmt(incAdv);
             document.getElementById('phase1-inc').innerText = fmt(incAdv);
+            
+            const p1CcRow = document.getElementById('phase1-credit-row');
+            const p1CcVal = document.getElementById('phase1-credit');
+            if (ccAdv > 0) {
+                p1CcRow.style.display = 'flex';
+                if (ccIsPaid) {
+                    p1CcRow.querySelector('.label').innerText = '0. Кредитка (Погашена ✅)';
+                    p1CcVal.innerText = fmt(ccAdv);
+                    p1CcVal.style.color = '#137333';
+                } else {
+                    p1CcRow.querySelector('.label').innerText = '0. Кредитная карта';
+                    p1CcVal.innerText = fmt(ccAdv);
+                    p1CcVal.style.color = 'var(--accent)';
+                }
+            } else {
+                p1CcRow.style.display = 'none';
+            }
+
             document.getElementById('phase1-comm').innerText = fmt(comm);
             document.getElementById('phase1-goals').innerText = fmt(goalsAdvTotal);
             document.getElementById('phase1-free').innerText = fmt(phase1Free);
@@ -1667,6 +1978,24 @@
             // Update Phase 2 UI
             document.getElementById('phase2-total-badge').innerText = fmt(incSal);
             document.getElementById('phase2-inc').innerText = fmt(incSal);
+
+            const p2CcRow = document.getElementById('phase2-credit-row');
+            const p2CcVal = document.getElementById('phase2-credit');
+            if (ccSal > 0) {
+                p2CcRow.style.display = 'flex';
+                if (ccIsPaid) {
+                    p2CcRow.querySelector('.label').innerText = '0. Кредитка (Погашена ✅)';
+                    p2CcVal.innerText = fmt(ccSal);
+                    p2CcVal.style.color = '#137333';
+                } else {
+                    p2CcRow.querySelector('.label').innerText = '0. Кредитная карта';
+                    p2CcVal.innerText = fmt(ccSal);
+                    p2CcVal.style.color = 'var(--accent)';
+                }
+            } else {
+                p2CcRow.style.display = 'none';
+            }
+
             document.getElementById('phase2-rent').innerText = fmt(rent);
             document.getElementById('phase2-goals').innerText = fmt(goalsSalTotal);
             document.getElementById('phase2-free').innerText = fmt(phase2Free);
@@ -1720,7 +2049,7 @@
             document.getElementById('view-val-save').innerText = fmt(saveTot);
             document.getElementById('sub-save').innerText = `Аванс: ${fmt(saveAdv)} | ЗП: ${fmt(saveSal)}`;
 
-            drawChart(comm + rent, totalMonthlyGoals, grocTot, wantsTot, unplanTot, saveTot);
+            drawChart(comm + rent + ccAdv + ccSal, totalMonthlyGoals, grocTot, wantsTot, unplanTot, saveTot, (ccAdv + ccSal > 0));
             
             // Render sub-pages detailing
             renderGroceriesPage(totalFree);
@@ -1728,14 +2057,14 @@
             renderUnplannedPage(totalFree);
         }
 
-        function drawChart(baseFixed, totalGoals, groc, wants, unplan, save) {
+        function drawChart(baseFixed, totalGoals, groc, wants, unplan, save, hasCredit = false) {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (chartInst) chartInst.destroy();
             
             chartInst = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Аренда + Коммуналка', 'Финансовые цели', 'Продукты', 'Хотелки', 'Внеплановые', 'Сбережения'],
+                    labels: [hasCredit ? 'Обязательные + Кредитка' : 'Аренда + Коммуналка', 'Финансовые цели', 'Продукты', 'Хотелки', 'Внеплановые', 'Сбережения'],
                     datasets: [{
                         data: [baseFixed, totalGoals, groc, wants, unplan, save],
                         backgroundColor: ['#111111', '#931717', '#444444', '#777777', '#aaaaaa', '#cccccc'],
@@ -2175,6 +2504,98 @@
             }
         }
 
+        function quickPayoffCreditCard(fromModal = false) {
+            if (!appState.creditCard || appState.creditCard.amount <= 0) return;
+            
+            const paidAmount = appState.creditCard.amount;
+            const todayStr = new Date().toLocaleDateString('ru-RU');
+            
+            appState.creditCard.isPaid = true;
+            appState.creditCard.paidDate = todayStr;
+            
+            if (!appState.creditCard.history) appState.creditCard.history = [];
+            appState.creditCard.history.push({
+                id: Date.now(),
+                amount: paidAmount,
+                phase: appState.creditCard.phase || 'salary',
+                date: todayStr,
+                paidDate: todayStr,
+                month: getMonthKey(currentDate),
+                isPaid: true
+            });
+            
+            if (fromModal) {
+                closeCreditCardModal();
+            }
+            
+            savePlan();
+            renderDashboard();
+            alert(`✅ Кредитная карта успешно погашена на ${fmt(paidAmount)}! Задолженность закрыта.`);
+        }
+
+        function openCreditCardModal() {
+            const cc = appState.creditCard || { amount: 0, phase: 'salary', isPaid: false, paidDate: '' };
+            
+            document.getElementById('quick-in-cc-amount').value = cc.amount || '';
+            document.getElementById('quick-in-cc-phase').value = cc.phase || 'salary';
+            document.getElementById('quick-in-cc-paid').checked = !!cc.isPaid;
+            
+            const amountDisp = document.getElementById('quick-cc-amount-display');
+            const phaseDisp = document.getElementById('quick-cc-phase-display');
+            const payActionBtn = document.getElementById('quick-cc-pay-action-btn');
+            const labelDisp = document.getElementById('quick-cc-label');
+            
+            if (cc.amount > 0) {
+                amountDisp.innerText = fmt(cc.amount);
+                phaseDisp.innerText = `Списание в 1-ю очередь: ${cc.phase === 'salary' ? 'Фаза 2 (Зарплата)' : 'Фаза 1 (Аванс)'}`;
+                
+                if (cc.isPaid) {
+                    labelDisp.innerText = 'Статус задолженности';
+                    amountDisp.innerText = `Погашена ✅ (${fmt(cc.amount)})`;
+                    amountDisp.style.color = '#137333';
+                    payActionBtn.style.display = 'none';
+                } else {
+                    labelDisp.innerText = 'Долг к погашению в этом месяце';
+                    amountDisp.style.color = 'var(--accent)';
+                    payActionBtn.style.display = 'block';
+                    payActionBtn.innerText = `✅ Погасить долг (${fmt(cc.amount)})`;
+                }
+            } else {
+                labelDisp.innerText = 'Текущее состояние';
+                amountDisp.innerText = 'Задолженность отсутствует ✨';
+                amountDisp.style.color = 'var(--text)';
+                phaseDisp.innerText = 'Кредитная карта не используется';
+                payActionBtn.style.display = 'none';
+            }
+            
+            document.getElementById('creditCardModal').classList.add('active');
+        }
+
+        function closeCreditCardModal() {
+            document.getElementById('creditCardModal').classList.remove('active');
+        }
+
+        function saveCreditCardFromQuickModal() {
+            const amt = parseFloat(document.getElementById('quick-in-cc-amount').value) || 0;
+            const ph = document.getElementById('quick-in-cc-phase').value;
+            const paid = document.getElementById('quick-in-cc-paid').checked;
+            
+            if (!appState.creditCard) {
+                appState.creditCard = { amount: 0, phase: 'salary', isPaid: false, paidDate: '', history: [] };
+            }
+            
+            appState.creditCard.amount = amt;
+            appState.creditCard.phase = ph;
+            appState.creditCard.isPaid = paid;
+            if (paid && !appState.creditCard.paidDate) {
+                appState.creditCard.paidDate = new Date().toLocaleDateString('ru-RU');
+            }
+            
+            closeCreditCardModal();
+            savePlan();
+            renderDashboard();
+        }
+
         function openMemoModal() {
             document.getElementById('memoModal').classList.add('active');
         }
@@ -2205,6 +2626,11 @@
             document.getElementById('in-fix-comm').value = appState.fixed.comm || '';
             document.getElementById('in-fix-rent').value = appState.fixed.rent || '';
             
+            const cc = appState.creditCard || { amount: 0, phase: 'salary', isPaid: false };
+            document.getElementById('in-cc-amount').value = cc.amount || '';
+            document.getElementById('in-cc-phase').value = cc.phase || 'salary';
+            document.getElementById('in-cc-paid').checked = !!cc.isPaid;
+
             document.getElementById('in-pct-groc').value = appState.distPct.groc || '';
             document.getElementById('in-pct-wants').value = appState.distPct.wants || '';
             document.getElementById('in-pct-unplan').value = appState.distPct.unplan || '';
@@ -2225,6 +2651,14 @@
             appState.fixed.comm = parseFloat(document.getElementById('in-fix-comm').value) || 0;
             appState.fixed.rent = parseFloat(document.getElementById('in-fix-rent').value) || 0;
             
+            if (!appState.creditCard) appState.creditCard = { amount: 0, phase: 'salary', isPaid: false, paidDate: '', history: [] };
+            appState.creditCard.amount = parseFloat(document.getElementById('in-cc-amount').value) || 0;
+            appState.creditCard.phase = document.getElementById('in-cc-phase').value;
+            appState.creditCard.isPaid = document.getElementById('in-cc-paid').checked;
+            if (appState.creditCard.isPaid && !appState.creditCard.paidDate) {
+                appState.creditCard.paidDate = new Date().toLocaleDateString('ru-RU');
+            }
+
             appState.distPct.groc = parseFloat(document.getElementById('in-pct-groc').value) || 0;
             appState.distPct.wants = parseFloat(document.getElementById('in-pct-wants').value) || 0;
             appState.distPct.unplan = parseFloat(document.getElementById('in-pct-unplan').value) || 0;
@@ -2257,7 +2691,33 @@
             const comm = parseFloat(document.getElementById('in-fix-comm').value) || 0;
             const rent = parseFloat(document.getElementById('in-fix-rent').value) || 0;
 
-            const { rAdv, rSal } = calcGoalsRatio(incAdv, comm, incSal, rent);
+            const ccAmt = parseFloat(document.getElementById('in-cc-amount').value) || 0;
+            const ccPh = document.getElementById('in-cc-phase').value;
+            const ccPaid = document.getElementById('in-cc-paid').checked;
+
+            const ccAdv = (ccPh === 'advance' && ccAmt > 0) ? ccAmt : 0;
+            const ccSal = (ccPh === 'salary' && ccAmt > 0) ? ccAmt : 0;
+
+            const badgeEl = document.getElementById('modal-cc-status-badge');
+            if (badgeEl) {
+                if (ccAmt > 0) {
+                    if (ccPaid) {
+                        badgeEl.innerText = 'Погашена ✅';
+                        badgeEl.style.background = '#e6f4ea';
+                        badgeEl.style.color = '#137333';
+                    } else {
+                        badgeEl.innerText = 'Ожидает';
+                        badgeEl.style.background = '#fef2f2';
+                        badgeEl.style.color = 'var(--accent)';
+                    }
+                } else {
+                    badgeEl.innerText = 'Нет долга';
+                    badgeEl.style.background = '#f1f3f4';
+                    badgeEl.style.color = 'var(--text-muted)';
+                }
+            }
+
+            const { rAdv, rSal } = calcGoalsRatio(incAdv, comm + ccAdv, incSal, rent + ccSal);
 
             let goalsAdvTotal = 0;
             let goalsSalTotal = 0;
@@ -2270,8 +2730,8 @@
                 goalsSalTotal += salShare;
             });
 
-            const phase1Free = Math.max(0, incAdv - comm - goalsAdvTotal);
-            const phase2Free = Math.max(0, incSal - rent - goalsSalTotal);
+            const phase1Free = Math.max(0, incAdv - comm - ccAdv - goalsAdvTotal);
+            const phase2Free = Math.max(0, incSal - rent - ccSal - goalsSalTotal);
             const totalFree = phase1Free + phase2Free;
 
             document.getElementById('modal-val-groc').innerText = fmt(totalFree * (p1 / 100));
@@ -2538,6 +2998,80 @@
                             </div>
                         `;
                         wantsBreakdownEl.appendChild(div);
+                    });
+                }
+            }
+
+            // Aggregate Credit Card metrics across history
+            let totalCcPaid = 0;
+            let totalCcCount = 0;
+            const ccLog = [];
+
+            history.forEach(item => {
+                const s = item.state;
+                const mKey = item.month; // e.g. 2026-08
+                if (s.creditCard && s.creditCard.amount > 0) {
+                    totalCcCount++;
+                    if (s.creditCard.isPaid) {
+                        totalCcPaid += s.creditCard.amount;
+                    }
+                    ccLog.push({
+                        month: mKey,
+                        amount: s.creditCard.amount,
+                        phase: s.creditCard.phase || 'salary',
+                        isPaid: !!s.creditCard.isPaid,
+                        paidDate: s.creditCard.paidDate || ''
+                    });
+                }
+                if (s.creditCard && Array.isArray(s.creditCard.history)) {
+                    s.creditCard.history.forEach(h => {
+                        const exists = ccLog.find(x => (x.id && x.id === h.id) || (x.month === (h.month || mKey) && x.amount === h.amount && x.paidDate === h.paidDate));
+                        if (!exists) {
+                            totalCcCount++;
+                            totalCcPaid += h.amount || 0;
+                            ccLog.push(h);
+                        }
+                    });
+                }
+            });
+
+            const avgCc = totalCcCount > 0 ? Math.round(totalCcPaid / (totalCcCount || 1)) : 0;
+            const statCcTotalEl = document.getElementById('stat-cc-total-paid');
+            const statCcCountEl = document.getElementById('stat-cc-count');
+            const statCcAvgEl = document.getElementById('stat-cc-avg');
+
+            if (statCcTotalEl) statCcTotalEl.innerText = fmt(totalCcPaid);
+            if (statCcCountEl) statCcCountEl.innerText = totalCcCount;
+            if (statCcAvgEl) statCcAvgEl.innerText = fmt(avgCc);
+
+            const ccListEl = document.getElementById('stats-cc-history-list');
+            if (ccListEl) {
+                ccListEl.innerHTML = '';
+                if (ccLog.length === 0) {
+                    ccListEl.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-muted); padding: 0.75rem 0; text-align: center;">Кредитная карта не использовалась в сохраненных периодах.</div>';
+                } else {
+                    ccLog.forEach(entry => {
+                        const row = document.createElement('div');
+                        row.className = 'item-row';
+                        row.style.cssText = 'padding: 0.75rem 1rem; border-radius: 12px; margin-bottom: 0.35rem; display: flex; justify-content: space-between; align-items: center;';
+                        row.innerHTML = `
+                            <div>
+                                <div style="font-weight: 800; font-size: 0.95rem; color: var(--text);">
+                                    💳 ${fmt(entry.amount)} 
+                                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-left: 0.4rem;">(${entry.month || ''})</span>
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 0.2rem;">
+                                    Списание: ${entry.phase === 'salary' ? 'Фаза 2 (Зарплата)' : 'Фаза 1 (Аванс)'} ${entry.paidDate ? `• Погашено: ${entry.paidDate}` : ''}
+                                </div>
+                            </div>
+                            <div>
+                                ${entry.isPaid ? 
+                                    '<span style="font-size: 0.75rem; font-weight: 800; background: #e6f4ea; color: #137333; padding: 0.25rem 0.6rem; border-radius: 6px;">Погашена ✅</span>' : 
+                                    '<span style="font-size: 0.75rem; font-weight: 800; background: #fef2f2; color: var(--accent); padding: 0.25rem 0.6rem; border-radius: 6px;">В процессе ⏳</span>'
+                                }
+                            </div>
+                        `;
+                        ccListEl.appendChild(row);
                     });
                 }
             }
