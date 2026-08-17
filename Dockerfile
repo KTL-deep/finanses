@@ -2,13 +2,18 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy configuration and sources
-COPY package*.json tsconfig*.json vite.config.ts tailwind.config.js postcss.config.js components.json index.html ./
+# Set npm resilience timeouts for slow network connections
+RUN npm config set fetch-retries 5 && npm config set fetch-retry-mintimeout 20000 && npm config set fetch-retry-maxtimeout 120000
+
+# Install dependencies using layer caching
+COPY package*.json ./
+RUN npm ci
+
+# Copy sources and build React application
+COPY tsconfig*.json vite.config.ts tailwind.config.js postcss.config.js components.json index.html ./
 COPY src ./src
 COPY public ./public
 
-# Install all dependencies and build React client
-RUN npm ci
 RUN npm run build
 
 # Production Runner
@@ -16,9 +21,8 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-# Install production dependencies only
-COPY package*.json ./
-RUN npm ci --omit=dev
+# The runtime server (server.js) only requires express (SQLite is built-in node:sqlite)
+RUN npm config set fetch-retries 5 && npm install --no-package-lock express
 
 COPY server.js ./
 COPY public ./public
