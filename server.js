@@ -146,11 +146,23 @@ function requireAuth(req, res, next) {
 }
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve static files (prioritizing dist if built by Vite)
+const distDir = path.join(__dirname, 'dist');
+const publicDir = path.join(__dirname, 'public');
+
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+}
+app.use(express.static(publicDir));
 
 // Fallback to index.html if root request
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  if (fs.existsSync(path.join(distDir, 'index.html'))) {
+    res.sendFile(path.join(distDir, 'index.html'));
+  } else {
+    res.sendFile(path.join(publicDir, 'index.html'));
+  }
 });
 
 // Healthcheck
@@ -308,7 +320,45 @@ app.get('/api/plans/:month', requireAuth, (req, res) => {
     if (row) {
       res.json({ month, state: JSON.parse(row.state), updatedAt: row.updated_at });
     } else {
-      res.status(404).json({ message: 'Plan not found for month' });
+      // Find latest preceding month or latest month to carry over pinned template items & base settings
+      const prevRow = db.prepare('SELECT state FROM monthly_plans WHERE month < ? ORDER BY month DESC LIMIT 1').get(month)
+        || db.prepare('SELECT state FROM monthly_plans ORDER BY month DESC LIMIT 1').get();
+      
+      if (prevRow) {
+        const sourceState = JSON.parse(prevRow.state);
+        const pinnedGroceries = (sourceState.groceries || [])
+          .filter(item => Boolean(item.pinned))
+          .map(item => ({
+            ...item,
+            done: false, // Fresh status for new month
+            date: '',
+          }));
+
+        const carryOverState = {
+          incomes: sourceState.incomes || { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000, extraAdv: 0, extraSal: 0 },
+          fixed: sourceState.fixed || { comm: 8000, rent: 32000 },
+          creditCard: { amount: 0, phase: 'salary', isPaid: false, paidDate: '' },
+          goals: sourceState.goals || [],
+          distPct: sourceState.distPct || { groc: 55, wants: 20, unplan: 10, save: 15 },
+          groceries: pinnedGroceries.length > 0 ? pinnedGroceries : [
+            { id: 'def_1', name: 'Зал', amount: 6000, done: false, pinned: true },
+            { id: 'def_2', name: 'Кофе', amount: 5000, done: false, pinned: true },
+            { id: 'def_3', name: 'Корм Арии', amount: 3500, done: false, pinned: true },
+            { id: 'def_4', name: 'Интернет', amount: 1150, done: false, pinned: true },
+            { id: 'def_5', name: 'Телефон', amount: 1500, done: false, pinned: true },
+            { id: 'def_6', name: 'Гемини', amount: 2000, done: false, pinned: true },
+            { id: 'def_7', name: 'Бензин', amount: 6000, done: false, pinned: true },
+            { id: 'def_8', name: 'Протеин и креатин', amount: 2500, done: false, pinned: true }
+          ],
+          wants: [],
+          unplanned: [],
+          memos: '',
+        };
+
+        res.json({ month, state: carryOverState, notFound: true });
+      } else {
+        res.status(404).json({ message: 'Plan not found for month' });
+      }
     }
   } catch (err) {
     console.error('Error reading plan:', err);
@@ -324,6 +374,18 @@ app.post('/api/plans/:month', requireAuth, (req, res) => {
     
     if (!state) {
       return res.status(400).json({ error: 'State payload is required' });
+    }
+    
+    // Authorization check: Only 'timur' can modify incomes, fixed bills, percentage distribution, and goals
+    if (req.user.username.toLowerCase() !== 'timur') {
+      const existingRow = db.prepare('SELECT state FROM monthly_plans WHERE month = ?').get(month);
+      if (existingRow) {
+        const existingState = JSON.parse(existingRow.state);
+        state.incomes = existingState.incomes;
+        state.fixed = existingState.fixed;
+        state.distPct = existingState.distPct;
+        state.goals = existingState.goals;
+      }
     }
     
     const now = new Date().toISOString();

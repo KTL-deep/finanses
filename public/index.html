@@ -548,10 +548,17 @@
         .item-pin-btn {
             background: transparent; border: none; font-size: 1.1rem;
             cursor: pointer; padding: 0 0.3rem; opacity: 0.3; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; line-height: 1;
         }
         .item-pin-btn:hover { opacity: 0.7; transform: scale(1.15); }
         .item-pin-btn.active { opacity: 1; }
         .item-pin-btn.active:hover { opacity: 1; transform: scale(1.15); }
+        .item-edit-btn {
+            background: transparent; border: none; font-size: 0.95rem;
+            cursor: pointer; padding: 0 0.35rem; opacity: 0.45; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+        }
+        .item-edit-btn:hover { opacity: 1; transform: scale(1.18); }
         .clickable-card { cursor: pointer; transition: var(--transition); }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: var(--text); }
 
@@ -885,11 +892,11 @@
                 <div style="display: flex; flex-direction: column; gap: 1rem;">
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Наименование / Магазин</label>
-                        <input type="text" id="add-groc-name" placeholder="Например: Закупка в Ашане" style="width: 100%;">
+                        <input type="text" id="add-groc-name" placeholder="Например: Закупка в Ашане" style="width: 100%;" onkeydown="if(event.key==='Enter') addGroceryItem();">
                     </div>
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Сумма (₽)</label>
-                        <input type="number" id="add-groc-amount" placeholder="0" style="width: 100%; text-align: left;">
+                        <input type="number" id="add-groc-amount" placeholder="0" style="width: 100%; text-align: left;" onkeydown="if(event.key==='Enter') addGroceryItem();">
                     </div>
                     <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="addGroceryItem()">+ Внести покупку</button>
                 </div>
@@ -939,11 +946,11 @@
                 <div style="display: flex; flex-direction: column; gap: 1rem;">
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Название желания</label>
-                        <input type="text" id="add-wants-name" placeholder="Например: Кофейная станция" style="width: 100%;">
+                        <input type="text" id="add-wants-name" placeholder="Например: Кофейная станция" style="width: 100%;" onkeydown="if(event.key==='Enter') addWantsItem();">
                     </div>
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Стоимость (₽)</label>
-                        <input type="number" id="add-wants-amount" placeholder="0" style="width: 100%; text-align: left;">
+                        <input type="number" id="add-wants-amount" placeholder="0" style="width: 100%; text-align: left;" onkeydown="if(event.key==='Enter') addWantsItem();">
                     </div>
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Приоритет</label>
@@ -1001,11 +1008,11 @@
                 <div style="display: flex; flex-direction: column; gap: 1rem;">
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">На что потрачено?</label>
-                        <input type="text" id="add-unplan-name" placeholder="Например: Ремонт авто" style="width: 100%;">
+                        <input type="text" id="add-unplan-name" placeholder="Например: Ремонт авто" style="width: 100%;" onkeydown="if(event.key==='Enter') addUnplannedItem();">
                     </div>
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Сумма (₽)</label>
-                        <input type="number" id="add-unplan-amount" placeholder="0" style="width: 100%; text-align: left;">
+                        <input type="number" id="add-unplan-amount" placeholder="0" style="width: 100%; text-align: left;" onkeydown="if(event.key==='Enter') addUnplannedItem();">
                     </div>
                     <div>
                         <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Категория / Причина</label>
@@ -1512,6 +1519,144 @@
         </div>
     </div>
 
+    <!-- EDIT GROCERY PURCHASE MODAL -->
+    <div class="modal-overlay" id="editGroceryModal" onclick="if(event.target===this) closeEditGroceryModal()">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>✏️ Редактировать покупку</h2>
+                <button class="close-btn" onclick="closeEditGroceryModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <input type="hidden" id="edit-groc-id">
+                <div class="form-section" style="padding: 1.25rem;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Наименование / Магазин</label>
+                            <input type="text" id="edit-groc-name" placeholder="Название покупки" style="width: 100%; padding: 0.75rem 1rem; font-size: 1rem;" onkeydown="if(event.key==='Enter') saveEditGrocery();">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Сумма (₽)</label>
+                            <input type="number" id="edit-groc-amount" placeholder="0" style="width: 100%; text-align: left; padding: 0.75rem 1rem; font-size: 1.1rem; font-weight: 700;" onkeydown="if(event.key==='Enter') saveEditGrocery();">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Дата покупки</label>
+                            <input type="text" id="edit-groc-date" placeholder="ДД.ММ.ГГГГ" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem;" onkeydown="if(event.key==='Enter') saveEditGrocery();">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed var(--border);">
+                            <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 700; color: var(--text); cursor: pointer;">
+                                <input type="checkbox" id="edit-groc-done" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+                                Покупка совершена (зачеркнута / учтена в расходах)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 700; color: var(--text); cursor: pointer;">
+                                <input type="checkbox" id="edit-groc-pinned" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+                                📌 Закрепить (переносить на каждый месяц)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="gap: 0.75rem; justify-content: space-between;">
+                <button class="btn-secondary" style="color: var(--accent); border-color: rgba(147,23,23,0.3);" onclick="deleteCurrentEditGrocery()">Удалить</button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn-secondary" onclick="closeEditGroceryModal()">Отмена</button>
+                    <button class="btn-primary" onclick="saveEditGrocery()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT WANTS MODAL -->
+    <div class="modal-overlay" id="editWantsModal" onclick="if(event.target===this) closeEditWantsModal()">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>✏️ Редактировать желание</h2>
+                <button class="close-btn" onclick="closeEditWantsModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <input type="hidden" id="edit-wants-id">
+                <div class="form-section" style="padding: 1.25rem;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Название желания</label>
+                            <input type="text" id="edit-wants-name" placeholder="Название желания" style="width: 100%; padding: 0.75rem 1rem; font-size: 1rem;" onkeydown="if(event.key==='Enter') saveEditWants();">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Стоимость (₽)</label>
+                            <input type="number" id="edit-wants-amount" placeholder="0" style="width: 100%; text-align: left; padding: 0.75rem 1rem; font-size: 1.1rem; font-weight: 700;" onkeydown="if(event.key==='Enter') saveEditWants();">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Приоритет</label>
+                            <select id="edit-wants-priority" style="width: 100%; padding: 0.75rem 1rem; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); outline: none; background: #fff; font-size: 0.95rem;">
+                                <option value="Обычный">💡 Обычный</option>
+                                <option value="Средний">⚡ Средний</option>
+                                <option value="Высокий">🔥 Высокий</option>
+                            </select>
+                        </div>
+                        <div style="padding-top: 0.5rem; border-top: 1px dashed var(--border);">
+                            <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 700; color: var(--text); cursor: pointer;">
+                                <input type="checkbox" id="edit-wants-done" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+                                Желание исполнено (учтено в расходах)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="gap: 0.75rem; justify-content: space-between;">
+                <button class="btn-secondary" style="color: var(--accent); border-color: rgba(147,23,23,0.3);" onclick="deleteCurrentEditWants()">Удалить</button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn-secondary" onclick="closeEditWantsModal()">Отмена</button>
+                    <button class="btn-primary" onclick="saveEditWants()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT UNPLANNED MODAL -->
+    <div class="modal-overlay" id="editUnplannedModal" onclick="if(event.target===this) closeEditUnplannedModal()">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>✏️ Редактировать внеплановую трату</h2>
+                <button class="close-btn" onclick="closeEditUnplannedModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <input type="hidden" id="edit-unplan-id">
+                <div class="form-section" style="padding: 1.25rem;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">На что потрачено?</label>
+                            <input type="text" id="edit-unplan-name" placeholder="Например: Ремонт авто" style="width: 100%; padding: 0.75rem 1rem; font-size: 1rem;" onkeydown="if(event.key==='Enter') saveEditUnplanned();">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Сумма (₽)</label>
+                            <input type="number" id="edit-unplan-amount" placeholder="0" style="width: 100%; text-align: left; padding: 0.75rem 1rem; font-size: 1.1rem; font-weight: 700;" onkeydown="if(event.key==='Enter') saveEditUnplanned();">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Категория / Причина</label>
+                            <select id="edit-unplan-category" style="width: 100%; padding: 0.75rem 1rem; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); outline: none; background: #fff; font-size: 0.95rem;">
+                                <option value="Авто">🚗 Авто / Транспорт</option>
+                                <option value="Здоровье">🏥 Здоровье / Аптека</option>
+                                <option value="Дом">🏠 Дом / Быт</option>
+                                <option value="Подарки">🎁 Подарки / Праздники</option>
+                                <option value="Прочее">⚡ Прочее внеплановое</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">Дата траты</label>
+                            <input type="text" id="edit-unplan-date" placeholder="ДД.ММ.ГГГГ" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem;" onkeydown="if(event.key==='Enter') saveEditUnplanned();">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="gap: 0.75rem; justify-content: space-between;">
+                <button class="btn-secondary" style="color: var(--accent); border-color: rgba(147,23,23,0.3);" onclick="deleteCurrentEditUnplanned()">Удалить</button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn-secondary" onclick="closeEditUnplannedModal()">Отмена</button>
+                    <button class="btn-primary" onclick="saveEditUnplanned()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Default Mandatory Groceries Template
         const defaultGroceriesTemplate = [
@@ -1557,6 +1702,15 @@
 
         const fmt = (num) => Math.round(num || 0).toLocaleString('ru-RU') + ' ₽';
         const fmtBig = (num) => Math.round(num || 0).toLocaleString('ru-RU');
+        const escapeHtml = (str) => {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
 
         function calcGoalsRatio(incAdv, comm, incSal, rent) {
             const netAdv = Math.max(0, incAdv - comm);
@@ -2174,19 +2328,20 @@
                 const div = document.createElement('div');
                 div.className = `item-row ${item.done ? 'done' : ''}`;
                 div.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                    <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1; min-width: 0;">
                         <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleGroceryItem('${item.id}')">
-                        <div>
-                            <div class="item-title">${item.name}</div>
-                            <div class="item-meta">${item.date || ''}</div>
+                        <div style="min-width: 0; flex: 1; cursor: pointer;" onclick="openEditGroceryModal('${item.id}')" title="Нажмите для редактирования покупки">
+                            <div class="item-title" style="word-break: break-word;">${escapeHtml(item.name)}</div>
+                            <div class="item-meta">${escapeHtml(item.date || '')}</div>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
                         <button class="item-pin-btn ${item.pinned ? 'active' : ''}" onclick="togglePinGrocery('${item.id}')" title="${item.pinned ? 'Открепить (не переносить на следующий месяц)' : 'Закрепить (переносить каждый месяц)'}">
                             📌
                         </button>
                         <div class="item-amount">${fmt(item.amount)}</div>
-                        <button class="item-delete-btn" onclick="deleteGroceryItem('${item.id}')" title="Удалить">&times;</button>
+                        <button class="item-edit-btn" onclick="openEditGroceryModal('${item.id}')" title="Редактировать покупку">✏️</button>
+                        <button class="item-delete-btn" onclick="deleteGroceryItem('${item.id}')" title="Удалить покупку">&times;</button>
                     </div>
                 `;
                 listEl.appendChild(div);
@@ -2207,7 +2362,7 @@
                 id: Date.now(),
                 name: name,
                 amount: amount,
-                done: false,
+                done: true,
                 date: new Date().toLocaleDateString('ru-RU'),
                 fromTBank: false
             });
@@ -2244,6 +2399,65 @@
             appState.groceries = appState.groceries.filter(i => String(i.id) !== String(id));
             savePlan();
             renderDashboard();
+        }
+
+        function openEditGroceryModal(id) {
+            if (!appState.groceries) return;
+            const item = appState.groceries.find(i => String(i.id) === String(id));
+            if (!item) return;
+
+            document.getElementById('edit-groc-id').value = item.id;
+            document.getElementById('edit-groc-name').value = item.name || '';
+            document.getElementById('edit-groc-amount').value = item.amount !== undefined ? item.amount : 0;
+            document.getElementById('edit-groc-date').value = item.date || new Date().toLocaleDateString('ru-RU');
+            document.getElementById('edit-groc-done').checked = !!item.done;
+            document.getElementById('edit-groc-pinned').checked = !!item.pinned;
+
+            document.getElementById('editGroceryModal').classList.add('active');
+            setTimeout(() => {
+                const nameInp = document.getElementById('edit-groc-name');
+                if (nameInp) nameInp.focus();
+            }, 100);
+        }
+
+        function closeEditGroceryModal() {
+            document.getElementById('editGroceryModal').classList.remove('active');
+        }
+
+        function saveEditGrocery() {
+            const id = document.getElementById('edit-groc-id').value;
+            const name = document.getElementById('edit-groc-name').value.trim();
+            const amount = parseFloat(document.getElementById('edit-groc-amount').value) || 0;
+            const date = document.getElementById('edit-groc-date').value.trim() || new Date().toLocaleDateString('ru-RU');
+            const done = document.getElementById('edit-groc-done').checked;
+            const pinned = document.getElementById('edit-groc-pinned').checked;
+
+            if (!name) {
+                alert('Пожалуйста, укажите наименование покупки');
+                return;
+            }
+
+            if (!appState.groceries) appState.groceries = [];
+            const item = appState.groceries.find(i => String(i.id) === String(id));
+            if (item) {
+                item.name = name;
+                item.amount = amount;
+                item.date = date;
+                item.done = done;
+                item.pinned = pinned;
+
+                savePlan();
+                renderDashboard();
+            }
+            closeEditGroceryModal();
+        }
+
+        function deleteCurrentEditGrocery() {
+            const id = document.getElementById('edit-groc-id').value;
+            if (id) {
+                deleteGroceryItem(id);
+                closeEditGroceryModal();
+            }
         }
 
         function clearGroceriesList() {
@@ -2328,20 +2542,21 @@
                 const div = document.createElement('div');
                 div.className = `item-row ${item.done ? 'done' : ''}`;
                 div.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                    <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1; min-width: 0;">
                         <input type="checkbox" class="item-checkbox" ${item.done ? 'checked' : ''} onchange="toggleWantsItem('${item.id}')">
-                        <div>
-                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                <span>${item.name}</span>
+                        <div style="min-width: 0; flex: 1; cursor: pointer;" onclick="openEditWantsModal('${item.id}')" title="Нажмите для редактирования желания">
+                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; word-break: break-word;">
+                                <span>${escapeHtml(item.name)}</span>
                                 <span class="priority-badge ${pClass}">${pText}</span>
-                                <span class="priority-badge" style="background: #f0f4f8; color: #1a365d; border: 1px solid #cbd5e1;">${authorIcon} ${authorDisplayName}</span>
+                                <span class="priority-badge" style="background: #f0f4f8; color: #1a365d; border: 1px solid #cbd5e1;">${authorIcon} ${escapeHtml(authorDisplayName)}</span>
                             </div>
                             <div class="item-meta">${item.done ? 'Исполнено' : 'В планах'}</div>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
                         <div class="item-amount">${fmt(item.amount)}</div>
-                        <button class="item-delete-btn" onclick="deleteWantsItem('${item.id}')" title="Удалить">&times;</button>
+                        <button class="item-edit-btn" onclick="openEditWantsModal('${item.id}')" title="Редактировать желание">✏️</button>
+                        <button class="item-delete-btn" onclick="deleteWantsItem('${item.id}')" title="Удалить желание">&times;</button>
                     </div>
                 `;
                 listEl.appendChild(div);
@@ -2396,6 +2611,62 @@
             appState.wants = appState.wants.filter(i => String(i.id) !== String(id));
             savePlan();
             renderDashboard();
+        }
+
+        function openEditWantsModal(id) {
+            if (!appState.wants) return;
+            const item = appState.wants.find(i => String(i.id) === String(id));
+            if (!item) return;
+
+            document.getElementById('edit-wants-id').value = item.id;
+            document.getElementById('edit-wants-name').value = item.name || '';
+            document.getElementById('edit-wants-amount').value = item.amount !== undefined ? item.amount : 0;
+            document.getElementById('edit-wants-priority').value = item.priority || 'Обычный';
+            document.getElementById('edit-wants-done').checked = !!item.done;
+
+            document.getElementById('editWantsModal').classList.add('active');
+            setTimeout(() => {
+                const nameInp = document.getElementById('edit-wants-name');
+                if (nameInp) nameInp.focus();
+            }, 100);
+        }
+
+        function closeEditWantsModal() {
+            document.getElementById('editWantsModal').classList.remove('active');
+        }
+
+        function saveEditWants() {
+            const id = document.getElementById('edit-wants-id').value;
+            const name = document.getElementById('edit-wants-name').value.trim();
+            const amount = parseFloat(document.getElementById('edit-wants-amount').value) || 0;
+            const priority = document.getElementById('edit-wants-priority').value || 'Обычный';
+            const done = document.getElementById('edit-wants-done').checked;
+
+            if (!name) {
+                alert('Пожалуйста, укажите название желания');
+                return;
+            }
+
+            if (!appState.wants) appState.wants = [];
+            const item = appState.wants.find(i => String(i.id) === String(id));
+            if (item) {
+                item.name = name;
+                item.amount = amount;
+                item.priority = priority;
+                item.done = done;
+
+                savePlan();
+                renderDashboard();
+            }
+            closeEditWantsModal();
+        }
+
+        function deleteCurrentEditWants() {
+            const id = document.getElementById('edit-wants-id').value;
+            if (id) {
+                deleteWantsItem(id);
+                closeEditWantsModal();
+            }
         }
 
         function clearWantsList() {
@@ -2459,18 +2730,19 @@
                 const div = document.createElement('div');
                 div.className = 'item-row';
                 div.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 0.8rem;">
-                        <div>
-                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span>${item.name}</span>
-                                <span class="priority-badge ${catClass}">${item.category || 'Прочее'}</span>
+                    <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1; min-width: 0;">
+                        <div style="min-width: 0; flex: 1; cursor: pointer;" onclick="openEditUnplannedModal('${item.id}')" title="Нажмите для редактирования траты">
+                            <div class="item-title" style="display: flex; align-items: center; gap: 0.5rem; word-break: break-word;">
+                                <span>${escapeHtml(item.name)}</span>
+                                <span class="priority-badge ${catClass}">${escapeHtml(item.category || 'Прочее')}</span>
                             </div>
-                            <div class="item-meta">${item.date || ''}</div>
+                            <div class="item-meta">${escapeHtml(item.date || '')}</div>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
                         <div class="item-amount" style="color: var(--accent);">${fmt(item.amount)}</div>
-                        <button class="item-delete-btn" onclick="deleteUnplannedItem('${item.id}')" title="Удалить">&times;</button>
+                        <button class="item-edit-btn" onclick="openEditUnplannedModal('${item.id}')" title="Редактировать трату">✏️</button>
+                        <button class="item-delete-btn" onclick="deleteUnplannedItem('${item.id}')" title="Удалить трату">&times;</button>
                     </div>
                 `;
                 listEl.appendChild(div);
@@ -2509,6 +2781,62 @@
             appState.unplanned = appState.unplanned.filter(i => String(i.id) !== String(id));
             savePlan();
             renderDashboard();
+        }
+
+        function openEditUnplannedModal(id) {
+            if (!appState.unplanned) return;
+            const item = appState.unplanned.find(i => String(i.id) === String(id));
+            if (!item) return;
+
+            document.getElementById('edit-unplan-id').value = item.id;
+            document.getElementById('edit-unplan-name').value = item.name || '';
+            document.getElementById('edit-unplan-amount').value = item.amount !== undefined ? item.amount : 0;
+            document.getElementById('edit-unplan-category').value = item.category || 'Прочее';
+            document.getElementById('edit-unplan-date').value = item.date || new Date().toLocaleDateString('ru-RU');
+
+            document.getElementById('editUnplannedModal').classList.add('active');
+            setTimeout(() => {
+                const nameInp = document.getElementById('edit-unplan-name');
+                if (nameInp) nameInp.focus();
+            }, 100);
+        }
+
+        function closeEditUnplannedModal() {
+            document.getElementById('editUnplannedModal').classList.remove('active');
+        }
+
+        function saveEditUnplanned() {
+            const id = document.getElementById('edit-unplan-id').value;
+            const name = document.getElementById('edit-unplan-name').value.trim();
+            const amount = parseFloat(document.getElementById('edit-unplan-amount').value) || 0;
+            const category = document.getElementById('edit-unplan-category').value || 'Прочее';
+            const date = document.getElementById('edit-unplan-date').value.trim() || new Date().toLocaleDateString('ru-RU');
+
+            if (!name) {
+                alert('Пожалуйста, укажите описание траты');
+                return;
+            }
+
+            if (!appState.unplanned) appState.unplanned = [];
+            const item = appState.unplanned.find(i => String(i.id) === String(id));
+            if (item) {
+                item.name = name;
+                item.amount = amount;
+                item.category = category;
+                item.date = date;
+
+                savePlan();
+                renderDashboard();
+            }
+            closeEditUnplannedModal();
+        }
+
+        function deleteCurrentEditUnplanned() {
+            const id = document.getElementById('edit-unplan-id').value;
+            if (id) {
+                deleteUnplannedItem(id);
+                closeEditUnplannedModal();
+            }
         }
 
         function clearUnplannedList() {
@@ -3507,6 +3835,16 @@
                 errBox.style.display = 'block';
             }
         }
+
+        // Escape key listener for closing modals
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.modal-overlay.active');
+                if (activeModal) {
+                    activeModal.classList.remove('active');
+                }
+            }
+        });
 
         // Initialize on Load
         window.onload = async () => {
