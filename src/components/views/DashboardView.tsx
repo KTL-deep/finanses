@@ -38,7 +38,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { AnimatedNumber } from "@/components/corr/animated-number"
-import { calculateFinance } from "@/lib/calculations"
+import { calculateFinance, formatCurrency } from "@/lib/calculations"
 import type { MonthlyPlanState, User, GoalItem } from "@/types/finance"
 
 interface DashboardViewProps {
@@ -76,7 +76,7 @@ export function DashboardView({
   const calc = calculateFinance(state)
 
   function formatMoney(val: number) {
-    return (val || 0).toLocaleString("ru-RU") + " ₽"
+    return formatCurrency(val)
   }
 
   // Filter goals based on user role
@@ -223,7 +223,7 @@ export function DashboardView({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">
-              <AnimatedNumber value={calc.totalInc} /> ₽
+              <AnimatedNumber value={calc.totalInc} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Аванс: {formatMoney(calc.incAdv)} · ЗП: {formatMoney(calc.incSal)}
@@ -239,7 +239,7 @@ export function DashboardView({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">
-              <AnimatedNumber value={calc.totalFixedAndGoals} /> ₽
+              <AnimatedNumber value={calc.totalFixedAndGoals} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               ЖКУ ({formatMoney(calc.comm)}) + Аренда ({formatMoney(calc.rent)}) + Цели ({formatMoney(calc.totalMonthlyGoals)})
@@ -255,7 +255,7 @@ export function DashboardView({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight text-primary">
-              <AnimatedNumber value={calc.totalFree} /> ₽
+              <AnimatedNumber value={calc.totalFree} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Аванс: {formatMoney(calc.phase1Free)} · ЗП: {formatMoney(calc.phase2Free)}
@@ -271,7 +271,7 @@ export function DashboardView({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              <AnimatedNumber value={calc.allocatedSave} /> ₽
+              <AnimatedNumber value={calc.allocatedSave} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Доля {calc.pS}% от свободного остатка

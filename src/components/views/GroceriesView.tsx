@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { DataTable, type DataTableColumn, type DataTableRowAction } from "@/components/corr/data-table"
 import { AnimatedNumber } from "@/components/corr/animated-number"
-import { calculateFinance } from "@/lib/calculations"
+import { calculateFinance, formatCurrency } from "@/lib/calculations"
 import { TagsManagerModal } from "@/components/modals/TagsManagerModal"
 import type { GroceryItem, MonthlyPlanState } from "@/types/finance"
 
@@ -219,13 +219,13 @@ export function GroceriesView({ state, onUpdateState }: GroceriesViewProps) {
         const isDone = Boolean(row.done)
         return (
           <span
-            className={`font-mono font-semibold ${
+            className={`font-mono font-semibold whitespace-nowrap ${
               isDone
                 ? "line-through text-muted-foreground opacity-50"
                 : "text-foreground"
             }`}
           >
-            {row.amount.toLocaleString("ru-RU")} ₽
+            {formatCurrency(row.amount)}
           </span>
         )
       },
@@ -268,10 +268,10 @@ export function GroceriesView({ state, onUpdateState }: GroceriesViewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              <AnimatedNumber value={allocated} /> ₽
+              <AnimatedNumber value={allocated} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Аванс: {calc.grocAdv.toLocaleString("ru-RU")} ₽ · ЗП: {calc.grocSal.toLocaleString("ru-RU")} ₽
+              Аванс: {formatCurrency(calc.grocAdv)} · ЗП: {formatCurrency(calc.grocSal)}
             </p>
           </CardContent>
         </Card>
@@ -284,7 +284,7 @@ export function GroceriesView({ state, onUpdateState }: GroceriesViewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={spent} /> ₽
+              <AnimatedNumber value={spent} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {pct}% от выделенного лимита
@@ -300,7 +300,7 @@ export function GroceriesView({ state, onUpdateState }: GroceriesViewProps) {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${remaining < 0 ? "text-destructive" : "text-emerald-600"}`}>
-              <AnimatedNumber value={remaining} /> ₽
+              <AnimatedNumber value={remaining} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {remaining >= 0 ? "В пределах лимита" : "Превышение бюджета!"}

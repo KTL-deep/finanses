@@ -30,7 +30,7 @@ import {
   Legend,
 } from "chart.js"
 import { Bar, Doughnut, Line } from "react-chartjs-2"
-import { calculateFinance } from "@/lib/calculations"
+import { calculateFinance, formatCurrency } from "@/lib/calculations"
 import { getStats } from "@/lib/api"
 import type { MonthlyPlanState, MonthRecord } from "@/types/finance"
 import { AnimatedNumber } from "@/components/corr/animated-number"
@@ -285,10 +285,10 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              <AnimatedNumber value={calc.totalInc} /> ₽
+              <AnimatedNumber value={calc.totalInc} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Фаза 1: {calc.incAdv.toLocaleString("ru-RU")} ₽ · Фаза 2: {calc.incSal.toLocaleString("ru-RU")} ₽
+              Фаза 1: {formatCurrency(calc.incAdv)} · Фаза 2: {formatCurrency(calc.incSal)}
             </p>
           </CardContent>
         </Card>
@@ -302,7 +302,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={calc.totalFree} /> ₽
+              <AnimatedNumber value={calc.totalFree} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               На жизнь после фиксированных и целей
@@ -319,7 +319,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={totalActualSpent} /> ₽
+              <AnimatedNumber value={totalActualSpent} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {calc.totalInc > 0 ? Math.round((totalActualSpent / calc.totalInc) * 100) : 0}% от всех доходов
@@ -336,7 +336,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              <AnimatedNumber value={goalsDeductions} /> ₽
+              <AnimatedNumber value={goalsDeductions} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {(state.goals || []).length} активных целей в плане

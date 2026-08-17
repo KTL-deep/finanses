@@ -468,23 +468,8 @@ export function DataTable<TData>({
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border bg-card">
-          <Table className="table-fixed">
-            <colgroup>
-              {enableRowSelection ? <col style={{ width: "2.5rem" }} /> : null}
-              {enableRowReordering ? <col style={{ width: "2.5rem" }} /> : null}
-              {columns.map((column) => (
-                <col
-                  key={`skeleton-col-${column.id}`}
-                  style={
-                    column.width
-                      ? { width: column.width, minWidth: column.width }
-                      : undefined
-                  }
-                />
-              ))}
-              <col style={{ width: "5rem", minWidth: "5rem" }} />
-            </colgroup>
+        <div className="overflow-x-auto rounded-lg border bg-card scrollbar-none">
+          <Table className="w-full min-w-[520px] table-auto">
             <TableHeader>
               <TableRow>
                 {enableRowSelection ? (
@@ -498,8 +483,8 @@ export function DataTable<TData>({
                     <Skeleton className="h-4 w-24" />
                   </TableHead>
                 ))}
-                <TableHead className="sticky right-0 w-20 bg-card pr-2 text-right">
-                  <Skeleton className="ml-auto h-4 w-12" />
+                <TableHead className="sticky right-0 w-14 bg-card/95 backdrop-blur-sm pr-2 text-right z-10 border-l border-border/40 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
+                  <Skeleton className="ml-auto h-4 w-8" />
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -525,7 +510,7 @@ export function DataTable<TData>({
                         <Skeleton className="h-5 w-full max-w-40" />
                       </TableCell>
                     ))}
-                    <TableCell className="sticky right-0 bg-card text-right">
+                    <TableCell className="sticky right-0 w-14 bg-card/95 backdrop-blur-sm text-right z-10 border-l border-border/40 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
                       <Skeleton className="ml-auto h-8 w-8" />
                     </TableCell>
                   </TableRow>
@@ -578,23 +563,8 @@ export function DataTable<TData>({
           ) : null}
         </div>
 
-        <div className="overflow-x-auto rounded-lg border bg-card">
-          <Table className="table-fixed">
-            <colgroup>
-              {enableRowSelection ? <col style={{ width: "2.5rem" }} /> : null}
-              {enableRowReordering ? <col style={{ width: "2.5rem" }} /> : null}
-              {columns.map((column) => (
-                <col
-                  key={`col-${column.id}`}
-                  style={
-                    column.width
-                      ? { width: column.width, minWidth: column.width }
-                      : undefined
-                  }
-                />
-              ))}
-              <col style={{ width: "5rem", minWidth: "5rem" }} />
-            </colgroup>
+        <div className="overflow-x-auto rounded-lg border bg-card scrollbar-none">
+          <Table className="w-full min-w-[520px] table-auto">
             <TableHeader>
               <TableRow>
                 {enableRowSelection ? (
@@ -606,13 +576,13 @@ export function DataTable<TData>({
                       }
                       onCheckedChange={(checked) => {
                         const value = Boolean(checked)
-                        setSelectedRowIds((prev) => {
-                          const next = { ...prev }
-                          for (const row of pagedData) {
-                            next[getRowId(row)] = value
-                          }
-                          return next
-                        })
+                        setSelectedRowIds((prev) => ({
+                          ...prev,
+                          ...pagedData.reduce(
+                            (acc, row) => ({ ...acc, [getRowId(row)]: value }),
+                            {}
+                          ),
+                        }))
                       }}
                       aria-label="Select all rows"
                     />
@@ -652,8 +622,8 @@ export function DataTable<TData>({
                   )
                 })}
 
-                <TableHead className="sticky right-0 w-20 bg-card pr-2 text-right">
-                  Actions
+                <TableHead className="sticky right-0 w-14 bg-card/95 backdrop-blur-sm pr-2 text-right z-10 border-l border-border/40 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
+                  <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -742,7 +712,7 @@ export function DataTable<TData>({
                         </TableCell>
                       ))}
 
-                      <TableCell className="sticky right-0 bg-card text-right group-data-[state=selected]:bg-muted">
+                      <TableCell className="sticky right-0 w-14 bg-card/95 backdrop-blur-sm text-right group-data-[state=selected]:bg-muted z-10 border-l border-border/40 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { DataTable, type DataTableColumn, type DataTableRowAction } from "@/components/corr/data-table"
 import { AnimatedNumber } from "@/components/corr/animated-number"
-import { calculateFinance } from "@/lib/calculations"
+import { calculateFinance, formatCurrency } from "@/lib/calculations"
 import { TagsManagerModal } from "@/components/modals/TagsManagerModal"
 import type { WantItem, MonthlyPlanState, User as UserType } from "@/types/finance"
 
@@ -249,13 +249,13 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
         const isDone = Boolean(row.done)
         return (
           <span
-            className={`font-mono font-semibold ${
+            className={`font-mono font-semibold whitespace-nowrap ${
               isDone
                 ? "line-through text-muted-foreground opacity-50"
                 : "text-foreground"
             }`}
           >
-            {row.amount.toLocaleString("ru-RU")} ₽
+            {formatCurrency(row.amount)}
           </span>
         )
       },
@@ -294,10 +294,10 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              <AnimatedNumber value={allocated} /> ₽
+              <AnimatedNumber value={allocated} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Аванс: {calc.wantsAdv.toLocaleString("ru-RU")} ₽ · ЗП: {calc.wantsSal.toLocaleString("ru-RU")} ₽
+              Аванс: {formatCurrency(calc.wantsAdv)} · ЗП: {formatCurrency(calc.wantsSal)}
             </p>
           </CardContent>
         </Card>
@@ -310,10 +310,10 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={spent} /> ₽
+              <AnimatedNumber value={spent} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Тимур: {timurSpent.toLocaleString("ru-RU")} ₽ · Лера: {leraSpent.toLocaleString("ru-RU")} ₽
+              Тимур: {formatCurrency(timurSpent)} · Лера: {formatCurrency(leraSpent)}
             </p>
           </CardContent>
         </Card>
@@ -326,7 +326,7 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${remaining < 0 ? "text-destructive" : "text-emerald-600"}`}>
-              <AnimatedNumber value={remaining} /> ₽
+              <AnimatedNumber value={remaining} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {remaining >= 0 ? "В пределах бюджета" : "Лимит превышен"}

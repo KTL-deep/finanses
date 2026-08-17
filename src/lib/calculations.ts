@@ -170,3 +170,10 @@ export function calculateFinance(state: MonthlyPlanState) {
     remUnplan,
   }
 }
+
+export function formatCurrency(amount: number): string {
+  const num = typeof amount === "number" && !isNaN(amount) ? Math.round(amount) : 0
+  const isNegative = num < 0
+  const abs = Math.abs(num).toLocaleString("ru-RU")
+  return `${isNegative ? "−\u00A0" : ""}${abs}\u00A0₽`
+}
