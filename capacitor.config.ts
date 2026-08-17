@@ -5,8 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Финансы Семьи',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
-    cleartext: true
+    androidScheme: 'http',
+    cleartext: true,
+    allowNavigation: ['*']
   }
 };
 

@@ -55,6 +55,16 @@ export function getApiBaseUrl(): string {
   if (import.meta.env.VITE_API_URL) {
     return (import.meta.env.VITE_API_URL as string).trim().replace(/\/+$/, "")
   }
+  // When running inside Android APK (Capacitor webview origin is localhost or capacitor://)
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.protocol === "capacitor:" ||
+      window.location.protocol === "file:")
+  ) {
+    return "http://94.154.11.219:3000"
+  }
   return ""
 }
 
