@@ -10,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { User, KeyRound, LogOut, ShieldCheck } from "lucide-react"
-import { changePassword, logout } from "@/lib/api"
+import { User, KeyRound, LogOut, ShieldCheck, Server, CheckCircle2, AlertCircle } from "lucide-react"
+import { changePassword, logout, getApiBaseUrl, setApiBaseUrl, testServerConnection } from "@/lib/api"
 import { AnimatedButton } from "@/components/corr/animated-buttons"
 import type { User as UserType } from "@/types/finance"
 
@@ -33,6 +33,25 @@ export function UserProfileModal({
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
 
+  // Server URL
+  const [serverUrl, setServerUrl] = useState(() => getApiBaseUrl())
+  const [serverStatus, setServerStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle")
+  const [serverMsg, setServerMsg] = useState("")
+
+  async function handleTestServer() {
+    setServerStatus("testing")
+    setServerMsg("")
+    const res = await testServerConnection(serverUrl)
+    if (res.ok) {
+      setServerStatus("ok")
+      setServerMsg("Сервер доступен")
+      setApiBaseUrl(serverUrl)
+    } else {
+      setServerStatus("fail")
+      setServerMsg(res.message || "Ошибка подключения")
+    }
+  }
+
   async function handleChangePassword() {
     setError("")
     setMessage("")
@@ -52,7 +71,7 @@ export function UserProfileModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <User className="size-5 text-primary" />
@@ -73,6 +92,42 @@ export function UserProfileModal({
               <div className="font-semibold">Безопасная сессия</div>
               <div className="text-muted-foreground">Шифрование паролей PBKDF2-SHA512 + Salt</div>
             </div>
+          </div>
+
+          {/* Server URL for Mobile App */}
+          <div className="space-y-2 p-3 rounded-xl border bg-card text-xs">
+            <div className="font-semibold uppercase text-muted-foreground flex items-center gap-1.5 text-[11px]">
+              <Server className="size-3.5" /> Подключение к серверу
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Авто (по умолчанию)"
+                value={serverUrl}
+                onChange={(e) => setServerUrl(e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleTestServer}
+                disabled={serverStatus === "testing"}
+                className="h-8 text-xs shrink-0"
+              >
+                {serverStatus === "testing" ? "..." : "Проверить"}
+              </Button>
+            </div>
+            {serverStatus === "ok" && (
+              <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="size-3" />
+                {serverMsg}
+              </div>
+            )}
+            {serverStatus === "fail" && (
+              <div className="flex items-center gap-1 text-[11px] text-destructive">
+                <AlertCircle className="size-3" />
+                {serverMsg}
+              </div>
+            )}
           </div>
 
           {/* Change password form */}

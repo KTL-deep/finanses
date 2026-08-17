@@ -207,17 +207,15 @@ export default function App() {
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       {/* Top Header Navigation */}
       <header className="border-b bg-background sticky top-0 z-40">
-        <div className="flex h-16 items-center px-4 md:px-8 max-w-7xl mx-auto justify-between gap-4">
+        <div className="flex h-14 sm:h-16 items-center px-3 sm:px-4 md:px-8 max-w-7xl mx-auto justify-between gap-2">
           {/* Left: Brand */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="size-7 rounded-lg bg-foreground text-background flex items-center justify-center font-bold text-xs">
-                TL
-              </div>
-              <span className="font-semibold text-sm tracking-tight hidden sm:inline">
-                Финансовая Архитектура
-              </span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="size-7 rounded-lg bg-foreground text-background flex items-center justify-center font-bold text-xs shrink-0">
+              TL
             </div>
+            <span className="font-semibold text-xs sm:text-sm tracking-tight hidden md:inline">
+              Финансовая Архитектура
+            </span>
 
             {/* Sync status */}
             <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -237,7 +235,7 @@ export default function App() {
           </div>
 
           {/* Center: Month Selector */}
-          <div className="flex items-center gap-1 border rounded-md px-1 py-0.5 bg-background shadow-xs">
+          <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md px-1 py-0.5 bg-background shadow-xs shrink-0">
             <Button
               variant="ghost"
               size="icon-xs"
@@ -246,7 +244,7 @@ export default function App() {
             >
               <ChevronLeft className="size-3.5" />
             </Button>
-            <span className="font-semibold text-xs px-2 text-center min-w-28 uppercase tracking-wide">
+            <span className="font-semibold text-[11px] sm:text-xs px-1 sm:px-2 text-center min-w-24 sm:min-w-28 uppercase tracking-wide">
               {formatMonthTitle(selectedMonth)}
             </span>
             <Button
@@ -260,7 +258,7 @@ export default function App() {
           </div>
 
           {/* Right: Theme Toggle & User Nav */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -321,31 +319,31 @@ export default function App() {
       </header>
 
       {/* Main Container with shadcn/ui Tabs */}
-      <div className="flex-1 space-y-4 p-4 md:p-8 max-w-7xl mx-auto w-full">
+      <div className="flex-1 space-y-4 p-3 sm:p-4 md:p-8 max-w-7xl mx-auto w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="bg-muted/70 p-1">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">
+          <TabsList className="bg-muted/70 p-1 w-full max-w-full overflow-x-auto justify-start flex-nowrap scrollbar-none gap-1">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm shrink-0">
               Обзор
             </TabsTrigger>
-            <TabsTrigger value="groceries" className="text-xs sm:text-sm">
+            <TabsTrigger value="groceries" className="text-xs sm:text-sm shrink-0">
               Продукты ({calc.pG}%)
               <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px]">
                 {(planState.groceries || []).length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="wants" className="text-xs sm:text-sm">
+            <TabsTrigger value="wants" className="text-xs sm:text-sm shrink-0">
               Хотелки ({calc.pW}%)
               <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px]">
                 {(planState.wants || []).length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="unplanned" className="text-xs sm:text-sm">
+            <TabsTrigger value="unplanned" className="text-xs sm:text-sm shrink-0">
               Внеплановые ({calc.pU}%)
               <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px]">
                 {(planState.unplanned || []).length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="stats" className="text-xs sm:text-sm">
+            <TabsTrigger value="stats" className="text-xs sm:text-sm shrink-0">
               Статистика
             </TabsTrigger>
           </TabsList>

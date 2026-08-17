@@ -48,9 +48,73 @@ export const defaultState: MonthlyPlanState = {
   wantsTags: ["Одежда & Обувь", "Гаджеты", "Книги & Обучение", "Рестораны & Кафе", "Хобби", "Красота", "Подарки"],
 }
 
+// Server URL configuration for mobile and web
+export function getApiBaseUrl(): string {
+  const customUrl = localStorage.getItem("finance_api_url")
+  if (customUrl) return customUrl.trim().replace(/\/+$/, "")
+  if (import.meta.env.VITE_API_URL) {
+    return (import.meta.env.VITE_API_URL as string).trim().replace(/\/+$/, "")
+  }
+  return ""
+}
+
+export function setApiBaseUrl(url: string): void {
+  const clean = url.trim().replace(/\/+$/, "")
+  if (clean) {
+    localStorage.setItem("finance_api_url", clean)
+  } else {
+    localStorage.removeItem("finance_api_url")
+  }
+}
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem("finance_auth_token")
+}
+
+export function setAuthToken(token: string | null): void {
+  if (token) {
+    localStorage.setItem("finance_auth_token", token)
+  } else {
+    localStorage.removeItem("finance_auth_token")
+  }
+}
+
+// Generic API fetch wrapper with token and baseURL injection
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const base = getApiBaseUrl()
+  const fullUrl = base ? `${base}${path.startsWith("/") ? path : `/${path}`}` : path
+  
+  const headers = new Headers(init?.headers)
+  const token = getAuthToken()
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`)
+  }
+
+  return fetch(fullUrl, {
+    ...init,
+    headers,
+    credentials: "include",
+  })
+}
+
+export async function testServerConnection(url?: string): Promise<{ ok: boolean; status?: string; message?: string }> {
+  try {
+    const base = (url !== undefined ? url : getApiBaseUrl()).trim().replace(/\/+$/, "")
+    const fullUrl = base ? `${base}/api/health` : "/api/health"
+    const res = await fetch(fullUrl, { cache: "no-store" })
+    if (res.ok) {
+      const data = await res.json()
+      return { ok: true, status: data.status || "ok" }
+    }
+    return { ok: false, message: `HTTP ${res.status}` }
+  } catch (err: any) {
+    return { ok: false, message: err.message || "Ошибка подключения" }
+  }
+}
+
 export async function checkAuth(): Promise<{ authenticated: boolean; user?: User }> {
   try {
-    const res = await fetch("/api/auth/me")
+    const res = await apiFetch("/api/auth/me")
     if (!res.ok) return { authenticated: false }
     return await res.json()
   } catch {
@@ -60,7 +124,7 @@ export async function checkAuth(): Promise<{ authenticated: boolean; user?: User
 
 export async function fetchUsersList(): Promise<User[]> {
   try {
-    const res = await fetch("/api/auth/users")
+    const res = await apiFetch("/api/auth/users")
     if (!res.ok) return []
     const data = await res.json()
     return data.users || []
@@ -71,7 +135,7 @@ export async function fetchUsersList(): Promise<User[]> {
 
 export async function login(username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
   try {
-    const res = await fetch("/api/auth/login", {
+    const res = await apiFetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -79,6 +143,9 @@ export async function login(username: string, password: string): Promise<{ succe
     const data = await res.json()
     if (!res.ok) {
       return { success: false, error: data.error || "Ошибка входа" }
+    }
+    if (data.token) {
+      setAuthToken(data.token)
     }
     return { success: true, user: data.user }
   } catch {
@@ -88,15 +155,17 @@ export async function login(username: string, password: string): Promise<{ succe
 
 export async function logout(): Promise<void> {
   try {
-    await fetch("/api/auth/logout", { method: "POST" })
+    await apiFetch("/api/auth/logout", { method: "POST" })
   } catch (err) {
     console.error("Logout error:", err)
+  } finally {
+    setAuthToken(null)
   }
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch("/api/auth/change-password", {
+    const res = await apiFetch("/api/auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentPassword, newPassword }),
@@ -113,7 +182,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
 export async function getPlan(month: string): Promise<{ state: MonthlyPlanState; updatedAt?: string; notFound?: boolean }> {
   try {
-    const res = await fetch(`/api/plans/${month}`)
+    const res = await apiFetch(`/api/plans/${month}`)
     if (res.status === 404) {
       return { state: defaultState, notFound: true }
     }
@@ -141,7 +210,7 @@ export async function getPlan(month: string): Promise<{ state: MonthlyPlanState;
 
 export async function savePlan(month: string, state: MonthlyPlanState): Promise<{ success: boolean; updatedAt?: string }> {
   try {
-    const res = await fetch(`/api/plans/${month}`, {
+    const res = await apiFetch(`/api/plans/${month}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ state }),
@@ -157,7 +226,7 @@ export async function savePlan(month: string, state: MonthlyPlanState): Promise<
 
 export async function getStats(): Promise<MonthRecord[]> {
   try {
-    const res = await fetch("/api/stats")
+    const res = await apiFetch("/api/stats")
     if (!res.ok) return []
     const data = await res.json()
     return data.history || []

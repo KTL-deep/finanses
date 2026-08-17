@@ -145,6 +145,19 @@ function requireAuth(req, res, next) {
   }
 }
 
+// CORS configuration for mobile (Capacitor/Android) and remote clients
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.use(express.json());
 
 // Serve static files (prioritizing dist if built by Vite)
@@ -160,8 +173,10 @@ app.use(express.static(publicDir));
 app.get('/', (req, res) => {
   if (fs.existsSync(path.join(distDir, 'index.html'))) {
     res.sendFile(path.join(distDir, 'index.html'));
+  } else if (fs.existsSync(path.join(__dirname, 'index.html'))) {
+    res.sendFile(path.join(__dirname, 'index.html'));
   } else {
-    res.sendFile(path.join(publicDir, 'index.html'));
+    res.status(404).send('Application build not found. Run npm run build.');
   }
 });
 
