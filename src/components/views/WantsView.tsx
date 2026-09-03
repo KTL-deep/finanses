@@ -94,7 +94,7 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
       amount: parseFloat(newItemAmount) || 0,
       author: newItemAuthor,
       category: newItemCategory.trim() || "Покупки",
-      done: true, // Immediately crossed out and counted as spent
+      done: false,
       date: newItemDate || new Date().toLocaleDateString("ru-RU"),
     }
 

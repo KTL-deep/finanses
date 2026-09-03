@@ -349,6 +349,13 @@ app.get('/api/plans/:month', requireAuth, (req, res) => {
             date: '',
           }));
 
+        // A wish list is persistent: keep pending wishes in following months.
+        // Completed wishes stay in the month in which they were purchased so
+        // they are not counted as spending again in every subsequent month.
+        const pendingWants = (sourceState.wants || [])
+          .filter(item => !Boolean(item.done))
+          .map(item => ({ ...item, done: false }));
+
         const carryOverState = {
           incomes: sourceState.incomes || { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000, extraAdv: 0, extraSal: 0 },
           fixed: sourceState.fixed || { comm: 8000, rent: 32000 },
@@ -365,9 +372,11 @@ app.get('/api/plans/:month', requireAuth, (req, res) => {
             { id: 'def_7', name: 'Бензин', amount: 6000, done: false, pinned: true },
             { id: 'def_8', name: 'Протеин и креатин', amount: 2500, done: false, pinned: true }
           ],
-          wants: [],
+          wants: pendingWants,
           unplanned: [],
           memos: '',
+          groceryTags: sourceState.groceryTags || [],
+          wantsTags: sourceState.wantsTags || [],
         };
 
         res.json({ month, state: carryOverState, notFound: true });
