@@ -94,7 +94,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
     unplanSpent +
     fixedSpent +
     goalsDeductions +
-    (state.creditCard?.isPaid ? creditCardAmount : 0)
+    creditCardAmount
 
   // Doughnut Chart data for expense types
   const doughnutData = {
@@ -103,6 +103,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       "Хотелки (Тимур)",
       "Хотелки (Лера)",
       "Внеплановые",
+      "Погашение кредитки",
       "ЖКУ и Аренда",
       "Накопления и цели",
     ],
@@ -113,6 +114,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           timurWantsSpent,
           leraWantsSpent,
           unplanSpent,
+          creditCardAmount,
           fixedSpent,
           goalsDeductions,
         ],
@@ -121,6 +123,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           "#6366f1", // Indigo
           "#ec4899", // Pink
           "#f59e0b", // Amber
+          "#ef4444", // Red
           "#64748b", // Slate
           "#10b981", // Emerald
         ],
@@ -136,6 +139,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       "Продукты",
       "Хотелки",
       "Внеплановые",
+      "Кредитка",
       "Обязательные",
       "Цели",
     ],
@@ -146,6 +150,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           grocAllocated,
           wantsAllocated,
           unplanAllocated,
+          creditCardAmount,
           fixedSpent,
           goalsDeductions,
         ],
@@ -158,6 +163,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           grocSpent,
           totalWantsSpent,
           unplanSpent,
+          creditCardAmount,
           fixedSpent,
           goalsDeductions,
         ],
@@ -176,6 +182,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       c.spentGroc +
       c.spentWants +
       c.spentUnplan +
+      c.ccAmount +
       (c.comm + c.rent) +
       c.totalMonthlyGoals
     )
@@ -249,6 +256,16 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       spent: unplanSpent,
       share: totalActualSpent > 0 ? Math.round((unplanSpent / totalActualSpent) * 100) : 0,
       status: unplanSpent <= unplanAllocated ? "В норме" : "Превышение",
+    },
+    {
+      name: "Погашение кредитной карты",
+      icon: CreditCard,
+      color: "text-red-500",
+      bg: "bg-red-500/10",
+      plan: creditCardAmount,
+      spent: creditCardAmount,
+      share: totalActualSpent > 0 ? Math.round((creditCardAmount / totalActualSpent) * 100) : 0,
+      status: creditCardAmount > 0 ? `Погашена ${calc.ccPhase === "advance" ? "1-го числа" : "15-го числа"}` : "Нет долга",
     },
     {
       name: "Обязательные счета (ЖКУ + Аренда)",
@@ -458,7 +475,8 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="divide-y border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto rounded-lg border">
+          <div className="divide-y min-w-[720px]">
             <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase">
               <div className="col-span-4">Тип расхода</div>
               <div className="col-span-2 text-right">План / Лимит</div>
@@ -512,6 +530,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
                 </div>
               )
             })}
+          </div>
           </div>
         </CardContent>
       </Card>

@@ -30,7 +30,6 @@ import { UnplannedView } from "@/components/views/UnplannedView"
 import { StatsView } from "@/components/views/StatsView"
 
 import { EditPlanModal } from "@/components/modals/EditPlanModal"
-import { CreditCardModal } from "@/components/modals/CreditCardModal"
 import { TBankImportModal } from "@/components/modals/TBankImportModal"
 import { StatsModal } from "@/components/modals/StatsModal"
 import { UserProfileModal } from "@/components/modals/UserProfileModal"
@@ -70,7 +69,6 @@ export default function App() {
 
   // Modals
   const [editPlanOpen, setEditPlanOpen] = useState(false)
-  const [creditCardOpen, setCreditCardOpen] = useState(false)
   const [tbankImportOpen, setTbankImportOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -356,7 +354,6 @@ export default function App() {
               currentUser={currentUser}
               onUpdateState={handleStateUpdate}
               onOpenEditModal={() => setEditPlanOpen(true)}
-              onOpenCreditModal={() => setCreditCardOpen(true)}
               onOpenStatsModal={() => setStatsOpen(true)}
               onOpenTBankModal={() => setTbankImportOpen(true)}
               onOpenMemoModal={() => setMemoOpen(true)}
@@ -402,13 +399,6 @@ export default function App() {
       <EditPlanModal
         open={editPlanOpen}
         onOpenChange={setEditPlanOpen}
-        state={planState}
-        onSave={handleStateUpdate}
-      />
-
-      <CreditCardModal
-        open={creditCardOpen}
-        onOpenChange={setCreditCardOpen}
         state={planState}
         onSave={handleStateUpdate}
       />

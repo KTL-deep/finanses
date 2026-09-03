@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Trash2, Eye, EyeOff, AlertCircle, ShoppingCart, Heart, AlertOctagon, PiggyBank } from "lucide-react"
+import { Plus, Trash2, Eye, EyeOff, AlertCircle, ShoppingCart, Heart, AlertOctagon, PiggyBank, CreditCard } from "lucide-react"
 import { AnimatedButtons } from "@/components/corr/animated-buttons"
 import { calculateFinance } from "@/lib/calculations"
 import type { MonthlyPlanState, GoalItem } from "@/types/finance"
@@ -242,12 +242,71 @@ export function EditPlanModal({
 
           <Separator />
 
+          {/* Credit card payoff */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+              <CreditCard className="size-4" />
+              4. Погашение кредитной карты
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Укажите долг и дату поступления, из которого он будет полностью погашен в первую очередь. Остальные суммы пересчитаются автоматически.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border bg-muted/20 p-3.5">
+              <div className="space-y-1">
+                <Label className="text-xs">Сумма погашения (₽)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.creditCard?.amount ?? 0}
+                  onChange={(e) => {
+                    const amount = Math.max(0, parseFloat(e.target.value) || 0)
+                    setForm({
+                      ...form,
+                      creditCard: {
+                        ...form.creditCard,
+                        amount,
+                        isPaid: amount > 0,
+                        paidDate: amount > 0 ? (form.creditCard?.paidDate || "По плану месяца") : "",
+                      },
+                    })
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Погасить при поступлении</Label>
+                <select
+                  value={form.creditCard?.phase || "advance"}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      creditCard: {
+                        ...form.creditCard,
+                        phase: e.target.value as "advance" | "salary",
+                      },
+                    })
+                  }
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="advance">1-е число — Аванс</option>
+                  <option value="salary">15-е число — Зарплата</option>
+                </select>
+              </div>
+            </div>
+            {form.creditCard?.amount > 0 && (
+              <div className="rounded-md bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                После погашения {tempCalc.ccPhase === "advance" ? "1-го числа" : "15-го числа"} на остальные задачи останется пересчитанный бюджет фазы: {tempCalc.ccPhase === "advance" ? tempCalc.phase1Free.toLocaleString("ru-RU") : tempCalc.phase2Free.toLocaleString("ru-RU")} ₽.
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
           {/* Distribution Percentages */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-1">
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
-                  4. Доли распределения свободного фонда (%)
+                  5. Доли распределения свободного фонда (%)
                 </h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Свободный фонд к распределению: <span className="font-bold text-foreground font-mono">{tempCalc.totalFree.toLocaleString("ru-RU")} ₽</span> (1-е число: {tempCalc.phase1Free.toLocaleString("ru-RU")} ₽ · 15-е число: {tempCalc.phase2Free.toLocaleString("ru-RU")} ₽)
@@ -449,7 +508,7 @@ export function EditPlanModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
-                5. Финансовые цели и сроки
+                6. Финансовые цели и сроки
               </h4>
               <Button
                 variant="outline"

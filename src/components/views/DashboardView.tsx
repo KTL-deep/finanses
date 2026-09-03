@@ -5,10 +5,8 @@ import {
   CreditCard,
   Target,
   ArrowUpRight,
-  ShieldAlert,
   Eye,
   EyeOff,
-  Zap,
   ShoppingBag,
   ArrowRight,
   Settings2,
@@ -47,7 +45,6 @@ interface DashboardViewProps {
   currentUser: User | null
   onUpdateState: (newState: MonthlyPlanState) => void
   onOpenEditModal: () => void
-  onOpenCreditModal: () => void
   onOpenStatsModal: () => void
   onOpenTBankModal: () => void
   onOpenMemoModal: () => void
@@ -62,7 +59,6 @@ export function DashboardView({
   currentUser,
   onUpdateState,
   onOpenEditModal,
-  onOpenCreditModal,
   onOpenStatsModal,
   onOpenTBankModal,
   onOpenMemoModal,
@@ -112,44 +108,8 @@ export function DashboardView({
       : publicTransfers
   }
 
-  const allocationPlans = [
-    {
-      key: "advance" as const,
-      date: "1-е число",
-      title: "Пришёл аванс",
-      income: calc.incAdv,
-      credit: calc.ccAdv,
-      mandatoryLabel: "ЖКУ / коммуналка",
-      mandatory: calc.comm,
-      goals: getGoalTransfers("advance"),
-      goalsTotal: calc.goalsAdvTotal,
-      free: calc.phase1Free,
-      categories: [
-        { label: "Продукты и регулярные расходы", amount: calc.grocAdv, icon: ShoppingCart },
-        { label: "Хотелки", amount: calc.wantsAdv, icon: Heart },
-        { label: "Внеплановый резерв", amount: calc.unplanAdv, icon: AlertOctagon },
-        { label: "Сбережения / подушка", amount: calc.saveAdv, icon: PiggyBank },
-      ],
-    },
-    {
-      key: "salary" as const,
-      date: "15-е число",
-      title: "Пришла зарплата",
-      income: calc.incSal,
-      credit: calc.ccSal,
-      mandatoryLabel: "Аренда квартиры",
-      mandatory: calc.rent,
-      goals: getGoalTransfers("salary"),
-      goalsTotal: calc.goalsSalTotal,
-      free: calc.phase2Free,
-      categories: [
-        { label: "Продукты и регулярные расходы", amount: calc.grocSal, icon: ShoppingCart },
-        { label: "Хотелки", amount: calc.wantsSal, icon: Heart },
-        { label: "Внеплановый резерв", amount: calc.unplanSal, icon: AlertOctagon },
-        { label: "Сбережения / подушка", amount: calc.saveSal, icon: PiggyBank },
-      ],
-    },
-  ]
+  const advanceGoalTransfers = getGoalTransfers("advance")
+  const salaryGoalTransfers = getGoalTransfers("salary")
 
   // Recent transactions list from state
   const recentTransactions = [
@@ -235,36 +195,24 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Credit card alert banner */}
-      {calc.ccAmount > 0 && !calc.ccIsPaid && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border border-destructive/30 bg-destructive/5 text-foreground shadow-xs">
+      {/* Credit card payoff fact */}
+      {calc.ccAmount > 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 text-foreground shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-              <ShieldAlert className="size-5" />
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
+              <CreditCard className="size-5" />
             </div>
             <div>
               <div className="font-semibold text-sm">
-                Кредитная задолженность к погашению: {formatMoney(calc.ccAmount)}
+                Кредитка погашена на сумму {formatMoney(calc.ccAmount)}
               </div>
               <div className="text-xs text-muted-foreground">
-                Списание в 1-ю очередь:{" "}
+                Учтено первым списанием:{" "}
                 <span className="font-medium text-foreground">
-                  {calc.ccPhase === "salary" ? "Фаза 2 (Зарплата)" : "Фаза 1 (Аванс)"}
-                </span>{" "}
-                | Ожидает закрытия при поступлении дохода
+                  {calc.ccPhase === "salary" ? "15-е число, зарплата" : "1-е число, аванс"}
+                </span>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={onOpenCreditModal}
-              className="font-medium text-xs shadow-xs"
-            >
-              <Zap className="mr-1.5 size-3.5" />
-              Погасить долг ({formatMoney(calc.ccAmount)})
-            </Button>
           </div>
         </div>
       )}
@@ -391,8 +339,8 @@ export function DashboardView({
               {calc.ccAdv > 0 && (
                 <div className="flex justify-between">
                   <span>0. Кредитная карта:</span>
-                  <span className={calc.ccIsPaid ? "line-through text-emerald-600 font-medium" : "text-destructive font-semibold"}>
-                    {formatMoney(calc.ccAdv)} {calc.ccIsPaid && "(погашена)"}
+                  <span className="text-emerald-600 font-semibold">
+                    {formatMoney(calc.ccAdv)} (погашена)
                   </span>
                 </div>
               )}
@@ -404,10 +352,33 @@ export function DashboardView({
                 <span>2. Взнос в финансовые цели ({Math.round(calc.rAdv * 100)}%):</span>
                 <span className="font-semibold">{formatMoney(calc.goalsAdvTotal)}</span>
               </div>
+              {advanceGoalTransfers.map(({ goal, amount }) => (
+                <div key={goal.id} className="flex justify-between gap-3 pl-4 text-[11px] text-muted-foreground">
+                  <span>↳ {goal.name}</span>
+                  <span className="font-medium font-mono text-foreground">{formatMoney(amount)}</span>
+                </div>
+              ))}
               <div className="flex justify-between pt-2 border-t font-bold text-sm text-primary">
                 <span>Свободный остаток аванса:</span>
                 <span className="font-mono">{formatMoney(calc.phase1Free)}</span>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-3 space-y-2 text-xs">
+              <div className="font-semibold uppercase tracking-wider text-[10px] text-primary">
+                3. Распределить свободный остаток:
+              </div>
+              {[
+                ["Продукты и регулярные расходы", calc.grocAdv],
+                ["Хотелки", calc.wantsAdv],
+                ["Внеплановый резерв", calc.unplanAdv],
+                ["Сбережения / подушка", calc.saveAdv],
+              ].map(([label, amount]) => (
+                <div key={String(label)} className="flex justify-between gap-3 border-b border-border/50 pb-1.5 last:border-0 last:pb-0">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-semibold font-mono text-foreground">{formatMoney(Number(amount))}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -455,8 +426,8 @@ export function DashboardView({
               {calc.ccSal > 0 && (
                 <div className="flex justify-between">
                   <span>0. Кредитная карта:</span>
-                  <span className={calc.ccIsPaid ? "line-through text-emerald-600 font-medium" : "text-destructive font-semibold"}>
-                    {formatMoney(calc.ccSal)} {calc.ccIsPaid && "(погашена)"}
+                  <span className="text-emerald-600 font-semibold">
+                    {formatMoney(calc.ccSal)} (погашена)
                   </span>
                 </div>
               )}
@@ -468,104 +439,36 @@ export function DashboardView({
                 <span>2. Взнос в финансовые цели ({Math.round(calc.rSal * 100)}%):</span>
                 <span className="font-semibold">{formatMoney(calc.goalsSalTotal)}</span>
               </div>
+              {salaryGoalTransfers.map(({ goal, amount }) => (
+                <div key={goal.id} className="flex justify-between gap-3 pl-4 text-[11px] text-muted-foreground">
+                  <span>↳ {goal.name}</span>
+                  <span className="font-medium font-mono text-foreground">{formatMoney(amount)}</span>
+                </div>
+              ))}
               <div className="flex justify-between pt-2 border-t font-bold text-sm text-primary">
                 <span>Свободный остаток зарплаты:</span>
                 <span className="font-mono">{formatMoney(calc.phase2Free)}</span>
               </div>
             </div>
+
+            <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-3 space-y-2 text-xs">
+              <div className="font-semibold uppercase tracking-wider text-[10px] text-primary">
+                3. Распределить свободный остаток:
+              </div>
+              {[
+                ["Продукты и регулярные расходы", calc.grocSal],
+                ["Хотелки", calc.wantsSal],
+                ["Внеплановый резерв", calc.unplanSal],
+                ["Сбережения / подушка", calc.saveSal],
+              ].map(([label, amount]) => (
+                <div key={String(label)} className="flex justify-between gap-3 border-b border-border/50 pb-1.5 last:border-0 last:pb-0">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-semibold font-mono text-foreground">{formatMoney(Number(amount))}</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Exact payday transfer plans */}
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-base font-semibold">Что делать, когда пришли деньги</h3>
-          <p className="text-xs text-muted-foreground">
-            Точные суммы переводов в правильном порядке: сначала кредитка, затем обязательные платежи, цели и фонды.
-          </p>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          {allocationPlans.map((plan) => {
-            const debtExceedsIncome = plan.credit > plan.income
-            return (
-              <Card key={plan.key} className="shadow-xs overflow-hidden">
-                <CardHeader className="border-b bg-primary/[0.04] pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <Badge variant="outline" className="mb-2 text-[10px]">{plan.date}</Badge>
-                      <CardTitle className="text-base">{plan.title}</CardTitle>
-                      <CardDescription className="text-xs mt-1">
-                        Получено: <span className="font-semibold text-foreground">{formatMoney(plan.income)}</span>
-                      </CardDescription>
-                    </div>
-                    <ArrowRightLeft className="size-5 text-primary shrink-0" />
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/25 bg-destructive/5 p-3 text-sm">
-                      <span className="flex items-center gap-2 font-medium">
-                        <CreditCard className="size-4 text-destructive" />
-                        0. Погасить кредитку
-                      </span>
-                      <span className="font-bold font-mono text-destructive">{formatMoney(plan.credit)}</span>
-                    </div>
-                    {debtExceedsIncome && (
-                      <p className="text-[11px] text-destructive flex items-center gap-1.5">
-                        <AlertTriangle className="size-3.5" /> Денег этой фазы недостаточно для полного погашения долга.
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm">
-                      <span className="flex items-center gap-2 font-medium">
-                        <Layers className="size-4 text-muted-foreground" />
-                        1. {plan.mandatoryLabel}
-                      </span>
-                      <span className="font-bold font-mono">{formatMoney(plan.mandatory)}</span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border p-3 space-y-2">
-                    <div className="flex justify-between gap-3 text-sm font-semibold">
-                      <span className="flex items-center gap-2"><Target className="size-4 text-primary" />2. Отложить на цели</span>
-                      <span className="font-mono">{formatMoney(plan.goalsTotal)}</span>
-                    </div>
-                    <div className="pl-6 space-y-1.5">
-                      {plan.goals.length === 0 ? (
-                        <div className="text-xs text-muted-foreground">Целей в этом месяце нет</div>
-                      ) : plan.goals.map(({ goal, amount }) => (
-                        <div key={goal.id} className="flex justify-between gap-3 text-xs border-t pt-1.5 first:border-0 first:pt-0">
-                          <span className="text-muted-foreground">{goal.name}</span>
-                          <span className="font-semibold font-mono">{formatMoney(amount)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-3 space-y-2">
-                    <div className="flex justify-between gap-3 text-sm font-semibold text-primary">
-                      <span>3. Распределить остаток</span>
-                      <span className="font-mono">{formatMoney(plan.free)}</span>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {plan.categories.map((category) => {
-                        const Icon = category.icon
-                        return (
-                          <div key={category.label} className="flex justify-between gap-2 rounded-md bg-background border p-2.5 text-xs">
-                            <span className="flex items-center gap-1.5 text-muted-foreground"><Icon className="size-3.5" />{category.label}</span>
-                            <span className="font-semibold font-mono whitespace-nowrap">{formatMoney(category.amount)}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
       </div>
 
       {/* 4 Category Allocation Cards (55% Groceries, 20% Wants, 10% Unplanned, 15% Savings) */}
