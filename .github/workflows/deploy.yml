@@ -1,0 +1,90 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Check production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          SSH_HOST_KEY: ${{ secrets.VPS_HOST_KEY }}
+        run: |
+          test -n "$SSH_PRIVATE_KEY" || { echo "VPS_SSH_KEY is not configured"; exit 1; }
+          test -n "$SSH_HOST_KEY" || { echo "VPS_HOST_KEY is not configured"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Pull changes and restart Docker Compose
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_PATH: ${{ secrets.VPS_PATH }}
+        run: |
+          test -n "$VPS_HOST" || { echo "VPS_HOST is not configured"; exit 1; }
+          test -n "$VPS_USER" || { echo "VPS_USER is not configured"; exit 1; }
+          PORT="${VPS_PORT:-22}"
+          DEPLOY_PATH="${VPS_PATH:-/root/finanses}"
+
+          ssh -i ~/.ssh/deploy_key -p "$PORT" "$VPS_USER@$VPS_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+          git pull --ff-only origin main
+          docker compose up -d --build --remove-orphans
+
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/api/health >/dev/null; then
+              echo "Deployment completed and healthcheck passed"
+              docker compose ps
+              exit 0
+            fi
+            echo "Waiting for application healthcheck ($attempt/12)..."
+            sleep 5
+          done
+
+          echo "Healthcheck failed"
+          docker compose ps
+          docker compose logs --tail=100
+          exit 1
+          REMOTE
