@@ -91,7 +91,7 @@ export function EditPlanModal({
                 <Label className="text-xs">Тимур (аванс ₽)</Label>
                 <Input
                   type="number"
-                  value={form.incomes?.tAdv ?? 0}
+                  value={form.incomes?.tAdv || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -107,7 +107,7 @@ export function EditPlanModal({
                 <Label className="text-xs">Лера (аванс ₽)</Label>
                 <Input
                   type="number"
-                  value={form.incomes?.lAdv ?? 0}
+                  value={form.incomes?.lAdv || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -123,7 +123,7 @@ export function EditPlanModal({
                 <Label className="text-xs">Доп. доход (аванс ₽)</Label>
                 <Input
                   type="number"
-                  value={form.incomes?.extraAdv ?? 0}
+                  value={form.incomes?.extraAdv || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -150,7 +150,7 @@ export function EditPlanModal({
                 <Label className="text-xs">Тимур (зарплата ₽)</Label>
                 <Input
                   type="number"
-                  value={form.incomes?.tSal ?? 0}
+                  value={form.incomes?.tSal || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -166,7 +166,7 @@ export function EditPlanModal({
                 <Label className="text-xs">Лера (зарплата ₽)</Label>
                 <Input
                   type="number"
-                  value={form.incomes?.lSal ?? 0}
+                  value={form.incomes?.lSal || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -182,7 +182,7 @@ export function EditPlanModal({
                 <Label className="text-xs">Доп. доход (зарплата ₽)</Label>
                 <Input
                   type="number"
-                  value={form.incomes?.extraSal ?? 0}
+                  value={form.incomes?.extraSal || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -209,7 +209,7 @@ export function EditPlanModal({
                 <Label className="text-xs">ЖКУ / Коммуналка (Фаза 1: Аванс)</Label>
                 <Input
                   type="number"
-                  value={form.fixed?.comm ?? 0}
+                  value={form.fixed?.comm || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -225,7 +225,7 @@ export function EditPlanModal({
                 <Label className="text-xs">Аренда жилья (Фаза 2: Зарплата)</Label>
                 <Input
                   type="number"
-                  value={form.fixed?.rent ?? 0}
+                  value={form.fixed?.rent || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -257,7 +257,7 @@ export function EditPlanModal({
                 <Input
                   type="number"
                   min="0"
-                  value={form.creditCard?.amount ?? 0}
+                  value={form.creditCard?.amount || ""}
                   onChange={(e) => {
                     const amount = Math.max(0, parseFloat(e.target.value) || 0)
                     setForm({
@@ -346,7 +346,7 @@ export function EditPlanModal({
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
-                      value={form.distPct?.groc ?? 55}
+                      value={form.distPct?.groc || ""}
                       onChange={(e) =>
                         setForm({
                           ...form,
@@ -390,7 +390,7 @@ export function EditPlanModal({
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
-                      value={form.distPct?.wants ?? 20}
+                      value={form.distPct?.wants || ""}
                       onChange={(e) =>
                         setForm({
                           ...form,
@@ -434,7 +434,7 @@ export function EditPlanModal({
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
-                      value={form.distPct?.unplan ?? 10}
+                      value={form.distPct?.unplan || ""}
                       onChange={(e) =>
                         setForm({
                           ...form,
@@ -478,7 +478,7 @@ export function EditPlanModal({
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
-                      value={form.distPct?.save ?? 15}
+                      value={form.distPct?.save || ""}
                       onChange={(e) =>
                         setForm({
                           ...form,
@@ -567,7 +567,7 @@ export function EditPlanModal({
                     <Label className="text-[10px]">Целевая сумма (₽)</Label>
                     <Input
                       type="number"
-                      value={goal.target}
+                      value={goal.target || ""}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0
                         setForm({
@@ -583,9 +583,9 @@ export function EditPlanModal({
                     <Label className="text-[10px]">Срок (в месяцах)</Label>
                     <Input
                       type="number"
-                      value={goal.months || 12}
+                      value={goal.months || ""}
                       onChange={(e) => {
-                        const val = parseInt(e.target.value) || 12
+                        const val = parseInt(e.target.value) || 0
                         setForm({
                           ...form,
                           goals: form.goals.map((g) =>
@@ -599,7 +599,7 @@ export function EditPlanModal({
                     <Label className="text-[10px]">Уже накоплено (₽)</Label>
                     <Input
                       type="number"
-                      value={goal.saved || 0}
+                      value={goal.saved || ""}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0
                         setForm({
