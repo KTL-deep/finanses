@@ -44,15 +44,17 @@ export function GroceriesView({ state, onUpdateState }: GroceriesViewProps) {
 
   const calc = calculateFinance(state)
   const items = state.groceries || []
-  const currentTags = state.groceryTags || [
-    "ВкусВилл",
-    "Супермаркет",
-    "Аптека",
-    "Мясо & Рыба",
-    "Кофе & Завтраки",
-    "Бытовая химия",
-    "Корм Арии",
-  ]
+  const currentTags = Array.isArray(state.groceryTags)
+    ? state.groceryTags
+    : [
+        "ВкусВилл",
+        "Супермаркет",
+        "Аптека",
+        "Мясо & Рыба",
+        "Кофе & Завтраки",
+        "Бытовая химия",
+        "Корм Арии",
+      ]
   
   // Sorting: Pinned uncompleted -> uncompleted -> Pinned completed -> completed
   const sortedItems = [...items].sort((a, b) => {

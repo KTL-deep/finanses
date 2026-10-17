@@ -210,6 +210,8 @@ export async function getPlan(month: string): Promise<{ state: MonthlyPlanState;
       groceries: data.state.groceries || defaultState.groceries,
       wants: data.state.wants || [],
       unplanned: data.state.unplanned || [],
+      groceryTags: Array.isArray(data.state.groceryTags) ? data.state.groceryTags : defaultState.groceryTags,
+      wantsTags: Array.isArray(data.state.wantsTags) ? data.state.wantsTags : defaultState.wantsTags,
     }
     return { state: merged, updatedAt: data.updatedAt }
   } catch (err) {

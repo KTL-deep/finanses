@@ -323,6 +323,57 @@ app.post('/api/auth/change-password', requireAuth, (req, res) => {
   }
 });
 
+// Default tags for groceries and wants
+const DEFAULT_GROCERY_TAGS = [
+  "ВкусВилл",
+  "Супермаркет",
+  "Аптека",
+  "Мясо & Рыба",
+  "Кофе & Завтраки",
+  "Бытовая химия",
+  "Корм Арии",
+];
+
+const DEFAULT_WANTS_TAGS = [
+  "Одежда & Обувь",
+  "Гаджеты",
+  "Книги & Обучение",
+  "Рестораны & Кафе",
+  "Хобби",
+  "Красота",
+  "Подарки",
+];
+
+// Helper to find latest active tags across all plans
+function getLatestActiveTags() {
+  try {
+    const rows = db.prepare('SELECT state FROM monthly_plans ORDER BY month DESC').all();
+    let groceryTags = null;
+    let wantsTags = null;
+    for (const r of rows) {
+      try {
+        const s = JSON.parse(r.state);
+        if (!groceryTags && Array.isArray(s.groceryTags) && s.groceryTags.length > 0) {
+          groceryTags = s.groceryTags;
+        }
+        if (!wantsTags && Array.isArray(s.wantsTags) && s.wantsTags.length > 0) {
+          wantsTags = s.wantsTags;
+        }
+        if (groceryTags && wantsTags) break;
+      } catch (e) {}
+    }
+    return {
+      groceryTags: groceryTags || DEFAULT_GROCERY_TAGS,
+      wantsTags: wantsTags || DEFAULT_WANTS_TAGS,
+    };
+  } catch (err) {
+    return {
+      groceryTags: DEFAULT_GROCERY_TAGS,
+      wantsTags: DEFAULT_WANTS_TAGS,
+    };
+  }
+}
+
 // FINANCIAL DATA ENDPOINTS (PROTECTED)
 
 // Get plan for a specific month (YYYY-MM)
@@ -333,12 +384,21 @@ app.get('/api/plans/:month', requireAuth, (req, res) => {
     const row = stmt.get(month);
     
     if (row) {
-      res.json({ month, state: JSON.parse(row.state), updatedAt: row.updated_at });
+      const state = JSON.parse(row.state);
+      // Ensure tags are present even for legacy/empty month records
+      if (!Array.isArray(state.groceryTags) || !Array.isArray(state.wantsTags)) {
+        const latestTags = getLatestActiveTags();
+        if (!Array.isArray(state.groceryTags)) state.groceryTags = latestTags.groceryTags;
+        if (!Array.isArray(state.wantsTags)) state.wantsTags = latestTags.wantsTags;
+      }
+      res.json({ month, state, updatedAt: row.updated_at });
     } else {
       // Find latest preceding month or latest month to carry over pinned template items & base settings
       const prevRow = db.prepare('SELECT state FROM monthly_plans WHERE month < ? ORDER BY month DESC LIMIT 1').get(month)
         || db.prepare('SELECT state FROM monthly_plans ORDER BY month DESC LIMIT 1').get();
       
+      const latestTags = getLatestActiveTags();
+
       if (prevRow) {
         const sourceState = JSON.parse(prevRow.state);
         const pinnedGroceries = (sourceState.groceries || [])
@@ -368,6 +428,8 @@ app.get('/api/plans/:month', requireAuth, (req, res) => {
           wants: [],
           unplanned: [],
           memos: '',
+          groceryTags: Array.isArray(sourceState.groceryTags) ? sourceState.groceryTags : latestTags.groceryTags,
+          wantsTags: Array.isArray(sourceState.wantsTags) ? sourceState.wantsTags : latestTags.wantsTags,
         };
 
         res.json({ month, state: carryOverState, notFound: true });
@@ -415,6 +477,32 @@ app.post('/api/plans/:month', requireAuth, (req, res) => {
     `);
     
     stmt.run(month, stateJson, now);
+
+    // Propagate tags to all existing future months so tags carry over seamlessly
+    if (Array.isArray(state.groceryTags) || Array.isArray(state.wantsTags)) {
+      const futureRows = db.prepare('SELECT month, state FROM monthly_plans WHERE month > ?').all(month);
+      for (const fRow of futureRows) {
+        try {
+          const fState = JSON.parse(fRow.state);
+          let changed = false;
+          if (Array.isArray(state.groceryTags)) {
+            fState.groceryTags = state.groceryTags;
+            changed = true;
+          }
+          if (Array.isArray(state.wantsTags)) {
+            fState.wantsTags = state.wantsTags;
+            changed = true;
+          }
+          if (changed) {
+            db.prepare('UPDATE monthly_plans SET state = ?, updated_at = ? WHERE month = ?')
+              .run(JSON.stringify(fState), now, fRow.month);
+          }
+        } catch (e) {
+          console.error('Error propagating tags to future month:', fRow.month, e);
+        }
+      }
+    }
+
     res.json({ success: true, month, updatedAt: now });
   } catch (err) {
     console.error('Error saving plan:', err);

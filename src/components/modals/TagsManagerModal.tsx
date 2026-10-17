@@ -37,6 +37,9 @@ export function TagsManagerModal({
   // Sync state when opened
   React.useEffect(() => {
     setTagList(tags)
+    setEditingIndex(null)
+    setEditingValue("")
+    setNewTagInput("")
   }, [tags, open])
 
   function handleAddTag(e?: React.FormEvent) {
@@ -74,8 +77,45 @@ export function TagsManagerModal({
     setEditingValue("")
   }
 
+  function handleCloseModal() {
+    let updated = [...tagList]
+    let changed = false
+
+    // Commit any active inline edit
+    if (editingIndex !== null && editingIndex < updated.length) {
+      const trimmedEdit = editingValue.trim()
+      if (trimmedEdit && trimmedEdit !== updated[editingIndex]) {
+        updated[editingIndex] = trimmedEdit
+        changed = true
+      }
+      setEditingIndex(null)
+      setEditingValue("")
+    }
+
+    // Commit any typed new tag
+    const trimmedNew = newTagInput.trim()
+    if (trimmedNew && !updated.includes(trimmedNew)) {
+      updated.push(trimmedNew)
+      setNewTagInput("")
+      changed = true
+    }
+
+    if (changed) {
+      setTagList(updated)
+      onSaveTags(updated)
+    }
+
+    onOpenChange(false)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        handleCloseModal()
+      } else {
+        onOpenChange(true)
+      }
+    }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -187,7 +227,7 @@ export function TagsManagerModal({
         </div>
 
         <DialogFooter>
-          <Button variant="default" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="default" size="sm" onClick={handleCloseModal}>
             Готово
           </Button>
         </DialogFooter>

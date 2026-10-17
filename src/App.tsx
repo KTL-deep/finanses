@@ -150,6 +150,8 @@ export default function App() {
               : (existingIncomes.extraSal || 0),
         },
         goals: updatedCurrentMonthState.goals || nextState.goals,
+        groceryTags: updatedCurrentMonthState.groceryTags || nextState.groceryTags,
+        wantsTags: updatedCurrentMonthState.wantsTags || nextState.wantsTags,
       }
       await savePlan(nextMonthData.month, newNextState)
     }

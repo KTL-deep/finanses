@@ -52,15 +52,17 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
 
   const calc = calculateFinance(state)
   const items = state.wants || []
-  const currentTags = state.wantsTags || [
-    "Одежда & Обувь",
-    "Гаджеты",
-    "Книги & Обучение",
-    "Рестораны & Кафе",
-    "Хобби",
-    "Красота",
-    "Подарки",
-  ]
+  const currentTags = Array.isArray(state.wantsTags)
+    ? state.wantsTags
+    : [
+        "Одежда & Обувь",
+        "Гаджеты",
+        "Книги & Обучение",
+        "Рестораны & Кафе",
+        "Хобби",
+        "Красота",
+        "Подарки",
+      ]
   
   // Sorting: uncompleted items above completed items
   const sortedItems = [...items].sort((a, b) => {
@@ -94,7 +96,7 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
       amount: parseFloat(newItemAmount) || 0,
       author: newItemAuthor,
       category: newItemCategory.trim() || "Покупки",
-      done: true, // Immediately crossed out and counted as spent
+      done: false, // Planned item: not crossed out until purchased/checked
       date: newItemDate || new Date().toLocaleDateString("ru-RU"),
     }
 
@@ -418,7 +420,7 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
             <div>
               <CardTitle className="text-base">Wish-лист семьи</CardTitle>
               <CardDescription className="text-xs">
-                Покупки списываются и зачеркиваются сразу при добавлении; редактирование доступно в меню строки
+                Список желаний семьи; при покупке отметьте галочкой для списания из бюджета
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
