@@ -18,6 +18,7 @@ import { DataTable, type DataTableColumn, type DataTableRowAction } from "@/comp
 import { AnimatedNumber } from "@/components/corr/animated-number"
 import { calculateFinance, formatCurrency } from "@/lib/calculations"
 import { TagsManagerModal } from "@/components/modals/TagsManagerModal"
+import { cn } from "@/lib/utils"
 import type { GroceryItem, MonthlyPlanState } from "@/types/finance"
 
 interface GroceriesViewProps {
@@ -262,104 +263,106 @@ export function GroceriesView({ state, onUpdateState }: GroceriesViewProps) {
     <div className="space-y-6">
       {/* 3 Summary Cards matching financial rules */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
-              Выделено на продукты ({calc.pG}%)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              <AnimatedNumber value={allocated} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Аванс: {formatCurrency(calc.grocAdv)} · ЗП: {formatCurrency(calc.grocSal)}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="p-5 rounded-3xl border border-border/80 bg-card shadow-xs space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <span>Выделено на продукты ({calc.pG}%)</span>
+            <div className="size-2 rounded-full bg-blue-500" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono text-foreground">
+            <AnimatedNumber value={allocated} currency />
+          </div>
+          <p className="text-xs text-muted-foreground font-mono">
+            1-е: {formatCurrency(calc.grocAdv)} · 15-е: {formatCurrency(calc.grocSal)}
+          </p>
+        </div>
 
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
-              Фактически списано
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={spent} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {pct}% от выделенного лимита
-            </p>
-          </CardContent>
-        </Card>
+        <div className="p-5 rounded-3xl border border-border/80 bg-card shadow-xs space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <span>Фактически списано</span>
+            <span className="font-mono text-xs font-bold">{pct}%</span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono text-foreground">
+            <AnimatedNumber value={spent} currency />
+          </div>
+          {/* Visual progress bar */}
+          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mt-2">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-500",
+                pct > 100 ? "bg-destructive" : pct > 85 ? "bg-amber-500" : "bg-blue-500"
+              )}
+              style={{ width: `${Math.min(100, pct)}%` }}
+            />
+          </div>
+        </div>
 
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
-              Остаток бюджета
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${remaining < 0 ? "text-destructive" : "text-emerald-600"}`}>
-              <AnimatedNumber value={remaining} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {remaining >= 0 ? "В пределах лимита" : "Превышение бюджета!"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="p-5 rounded-3xl border border-border/80 bg-card shadow-xs space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <span>Остаток бюджета</span>
+            <Badge variant={remaining < 0 ? "destructive" : "secondary"} className="text-[10px] font-mono rounded-md">
+              {remaining >= 0 ? "В норме" : "Превышение"}
+            </Badge>
+          </div>
+          <div className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${remaining < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}`}>
+            <AnimatedNumber value={remaining} currency />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {remaining >= 0 ? "Доступно до конца месяца" : "Лимит исчерпан"}
+          </p>
+        </div>
       </div>
 
-      {/* Quick Add Bar */}
-      <Card className="shadow-xs">
-        <CardHeader className="pb-3">
+      {/* Quick Add Bar with Double-Bezel styling */}
+      <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/30 border border-border/80 shadow-xs">
+        <div className="rounded-2xl bg-card p-5 border border-border/50 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ShoppingCart className="size-4 text-primary" />
+            <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
+              <div className="size-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                <ShoppingCart className="size-3.5" />
+              </div>
               Добавить покупку продуктов
-            </CardTitle>
+            </h3>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setTagsManagerOpen(true)}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+              className="h-7.5 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 rounded-xl border-border/80"
             >
               <Tag className="size-3.5 text-primary" />
-              Настроить теги ({currentTags.length})
+              Теги ({currentTags.length})
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <form onSubmit={handleAddItem} className="flex flex-col sm:flex-row gap-3">
+
+          <form onSubmit={handleAddItem} className="flex flex-col sm:flex-row gap-2.5">
             <Input
               placeholder="Магазин / Товар (напр. ВкусВилл, Молоко, Мясо)"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              className="flex-1"
+              className="flex-1 rounded-xl h-10 text-base sm:text-sm bg-background"
             />
             <Input
               type="number"
+              inputMode="decimal"
               placeholder="Сумма ₽"
               value={newItemAmount}
               onChange={(e) => setNewItemAmount(e.target.value)}
-              className="w-full sm:w-36"
+              className="w-full sm:w-36 rounded-xl h-10 text-base sm:text-sm font-mono bg-background"
             />
             <Input
               placeholder="Дата (ДД.ММ.ГГГГ)"
               value={newItemDate}
               onChange={(e) => setNewItemDate(e.target.value)}
-              className="w-full sm:w-36"
+              className="w-full sm:w-36 rounded-xl h-10 text-base sm:text-sm font-mono bg-background"
             />
-            <Button type="submit" className="gap-1.5 shrink-0">
+            <Button type="submit" className="gap-1.5 shrink-0 rounded-xl h-10 px-5 shadow-soft">
               <Plus className="size-4" />
               Добавить
             </Button>
           </form>
 
           {/* Quick Tag Chips */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border/40">
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
             <span className="text-[11px] text-muted-foreground flex items-center gap-1 mr-1">
               <Tag className="size-3" /> Быстрые теги:
             </span>
@@ -368,14 +371,14 @@ export function GroceriesView({ state, onUpdateState }: GroceriesViewProps) {
                 key={tag}
                 type="button"
                 onClick={() => setNewItemName(tag)}
-                className="text-[11px] px-2 py-0.5 rounded-md border bg-muted/40 hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-colors cursor-pointer"
+                className="text-[11px] font-medium px-2.5 py-1 rounded-lg border border-border/70 bg-muted/40 hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-all duration-150 active:scale-95 cursor-pointer"
               >
                 {tag}
               </button>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* DataTable */}
       <Card className="shadow-xs">

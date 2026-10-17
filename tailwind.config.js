@@ -61,10 +61,29 @@ export default {
           900: "#541414",
         }
       },
+      fontFamily: {
+        sans: ["'Plus Jakarta Sans'", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["'JetBrains Mono'", "monospace"],
+      },
+      transitionTimingFunction: {
+        "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "spring": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "snappy": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+      },
+      boxShadow: {
+        "xs": "0 1px 2px 0 rgba(0, 0, 0, 0.04)",
+        "soft": "0 2px 10px -2px rgba(0, 0, 0, 0.05), 0 1px 3px -1px rgba(0, 0, 0, 0.03)",
+        "glass": "0 8px 32px 0 rgba(0, 0, 0, 0.08)",
+        "glow": "0 0 24px -4px rgba(16, 185, 129, 0.18)",
+        "glow-primary": "0 0 24px -4px rgba(99, 102, 241, 0.2)",
+      },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        "3xl": "calc(var(--radius) + 12px)",
+        "2xl": "calc(var(--radius) + 6px)",
+        xl: "var(--radius)",
+        lg: "calc(var(--radius) - 2px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 6px)",
       },
       keyframes: {
         "accordion-down": {

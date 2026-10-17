@@ -9,7 +9,7 @@
 - **Название**: Финансы Семьи (Family Financial Architecture).
 - **Пользователи**: Тимур и Лера.
 - **Репозиторий GitHub**: `https://github.com/KTL-deep/finanses.git` (ветка `main`).
-- **Сервер VPS (Production)**: `94.154.11.219`, порт `3000` (`http://94.154.11.219:3000`).
+- **Сервер VPS (Production)**: `94.154.11.219`, порт `3000`, домен `https://fin.ktl-server.ru/`.
 - **Android App ID**: `com.familyfinance.app` («Финансы Семьи»).
 
 ---
@@ -69,7 +69,7 @@
   - `android:usesCleartextTraffic="true"`, `INTERNET`.
   - `android:networkSecurityConfig="@xml/network_security_config"` — разрешает HTTP-трафик к IP сервера.
 - **Подключение к серверу из APK ([src/lib/api.ts](file:///D:/PYTHON_PROJECTS/finanses/src/lib/api.ts))**:
-  - При запуске внутри Android APK (`localhost` / `capacitor://`) `getApiBaseUrl()` автоматически возвращает `http://94.154.11.219:3000`.
+  - При запуске внутри Android APK (`localhost` / `capacitor://`) `getApiBaseUrl()` автоматически возвращает `https://fin.ktl-server.ru`.
   - Возможность ручной смены и проверки URL сервера на экранах входа (`LoginModal.tsx`) и профиля (`UserProfileModal.tsx`) через `localStorage.finance_api_url`.
 - **Иконки и экраны загрузки**:
   - Сгенерированы из [public/favicon.jpg](file:///D:/PYTHON_PROJECTS/finanses/public/favicon.jpg) для всех плотностей `mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`, круглые маски `ic_launcher_round.png`, адаптивные `ic_launcher_foreground.png` и заставки `splash.png`.

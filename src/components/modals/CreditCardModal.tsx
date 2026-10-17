@@ -90,6 +90,7 @@ export function CreditCardModal({
               <Label className="text-xs">Сумма задолженности к списанию (₽)</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                 placeholder="0"

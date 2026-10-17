@@ -94,7 +94,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
     unplanSpent +
     fixedSpent +
     goalsDeductions +
-    (state.creditCard?.isPaid ? creditCardAmount : 0)
+    creditCardAmount
 
   // Doughnut Chart data for expense types
   const doughnutData = {
@@ -103,6 +103,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       "Хотелки (Тимур)",
       "Хотелки (Лера)",
       "Внеплановые",
+      "Погашение кредитки",
       "ЖКУ и Аренда",
       "Накопления и цели",
     ],
@@ -113,6 +114,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           timurWantsSpent,
           leraWantsSpent,
           unplanSpent,
+          creditCardAmount,
           fixedSpent,
           goalsDeductions,
         ],
@@ -121,6 +123,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           "#6366f1", // Indigo
           "#ec4899", // Pink
           "#f59e0b", // Amber
+          "#ef4444", // Red
           "#64748b", // Slate
           "#10b981", // Emerald
         ],
@@ -136,6 +139,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       "Продукты",
       "Хотелки",
       "Внеплановые",
+      "Кредитка",
       "Обязательные",
       "Цели",
     ],
@@ -146,6 +150,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           grocAllocated,
           wantsAllocated,
           unplanAllocated,
+          creditCardAmount,
           fixedSpent,
           goalsDeductions,
         ],
@@ -158,6 +163,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
           grocSpent,
           totalWantsSpent,
           unplanSpent,
+          creditCardAmount,
           fixedSpent,
           goalsDeductions,
         ],
@@ -176,6 +182,7 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       c.spentGroc +
       c.spentWants +
       c.spentUnplan +
+      c.ccAmount +
       (c.comm + c.rent) +
       c.totalMonthlyGoals
     )
@@ -251,6 +258,16 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
       status: unplanSpent <= unplanAllocated ? "В норме" : "Превышение",
     },
     {
+      name: "Погашение кредитной карты",
+      icon: CreditCard,
+      color: "text-red-500",
+      bg: "bg-red-500/10",
+      plan: creditCardAmount,
+      spent: creditCardAmount,
+      share: totalActualSpent > 0 ? Math.round((creditCardAmount / totalActualSpent) * 100) : 0,
+      status: creditCardAmount > 0 ? `Погашена ${calc.ccPhase === "advance" ? "1-го числа" : "15-го числа"}` : "Нет долга",
+    },
+    {
       name: "Обязательные счета (ЖКУ + Аренда)",
       icon: Home,
       color: "text-slate-500",
@@ -274,287 +291,330 @@ export function StatsView({ state, selectedMonth }: StatsViewProps) {
 
   return (
     <div className="space-y-6">
-      {/* 4 Key Summary Cards */}
+      {/* 4 Key Summary Cards with Double-Bezel Architecture */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              <span>Общий доход</span>
-              <Wallet className="size-4 text-emerald-500" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">
-              <AnimatedNumber value={calc.totalInc} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Фаза 1: {formatCurrency(calc.incAdv)} · Фаза 2: {formatCurrency(calc.incSal)}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Total Income */}
+        <div className="p-1 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xs h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Общий доход
+                </CardTitle>
+                <div className="size-7 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <Wallet className="size-3.5" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+                <AnimatedNumber value={calc.totalInc} currency />
+              </div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                <span>Фаза 1: <strong className="text-foreground font-mono">{formatCurrency(calc.incAdv)}</strong></span>
+                <span>·</span>
+                <span>Фаза 2: <strong className="text-foreground font-mono">{formatCurrency(calc.incSal)}</strong></span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              <span>Свободный фонд</span>
-              <PieChart className="size-4 text-primary" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={calc.totalFree} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              На жизнь после фиксированных и целей
-            </p>
-          </CardContent>
-        </Card>
+        {/* Free Pool */}
+        <div className="p-1 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xs h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Свободный фонд
+                </CardTitle>
+                <div className="size-7 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <PieChart className="size-3.5" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+                <AnimatedNumber value={calc.totalFree} currency />
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">
+                На жизнь после обязательных счетов и целей
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              <span>Всего списано (Факт)</span>
-              <ArrowDownRight className="size-4 text-destructive" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={totalActualSpent} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {calc.totalInc > 0 ? Math.round((totalActualSpent / calc.totalInc) * 100) : 0}% от всех доходов
-            </p>
-          </CardContent>
-        </Card>
+        {/* Total Actual Spent */}
+        <div className="p-1 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xs h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Всего списано (Факт)
+                </CardTitle>
+                <div className="size-7 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive">
+                  <ArrowDownRight className="size-3.5" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+                <AnimatedNumber value={totalActualSpent} currency />
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">
+                <strong className="text-foreground">{calc.totalInc > 0 ? Math.round((totalActualSpent / calc.totalInc) * 100) : 0}%</strong> от суммарных доходов
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              <span>Отложено в цели</span>
-              <Target className="size-4 text-emerald-500" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">
-              <AnimatedNumber value={goalsDeductions} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {(state.goals || []).length} активных целей в плане
-            </p>
-          </CardContent>
-        </Card>
+        {/* Goals Deposited */}
+        <div className="p-1 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xs h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Отложено в цели
+                </CardTitle>
+                <div className="size-7 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <Target className="size-3.5" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+                <AnimatedNumber value={goalsDeductions} currency />
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">
+                <strong className="text-foreground">{(state.goals || []).length}</strong> активных накопительных целей
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Main Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Doughnut Chart: Expense Breakdown */}
-        <Card className="shadow-xs lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <PieChart className="size-4 text-primary" />
-              Структура расходов
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Распределение фактических трат по типам в текущем месяце
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center pt-4">
-            <div className="w-full max-w-[240px] aspect-square relative">
-              <Doughnut
-                data={doughnutData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: true,
-                  plugins: {
-                    legend: {
-                      display: false,
+        <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/40 shadow-soft lg:col-span-1">
+          <Card className="rounded-2xl border-border/50 bg-card shadow-xs h-full flex flex-col justify-between">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <PieChart className="size-4 text-primary" />
+                Структура расходов
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Распределение фактических трат по типам в текущем месяце
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center pt-2">
+              <div className="w-full max-w-[220px] aspect-square relative my-2">
+                <Doughnut
+                  data={doughnutData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
                     },
-                  },
-                  cutout: "68%",
-                }}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[11px] text-muted-foreground">Всего трат</span>
-                <span className="text-sm font-bold font-mono">
-                  {totalActualSpent.toLocaleString("ru-RU")} ₽
-                </span>
-              </div>
-            </div>
-
-            {/* Legend list */}
-            <div className="w-full space-y-2 mt-4 text-xs">
-              {expenseCategories.map((cat, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="size-2.5 rounded-full"
-                      style={{
-                        backgroundColor: doughnutData.datasets[0].backgroundColor[idx],
-                      }}
-                    />
-                    <span className="text-muted-foreground">{cat.name}</span>
-                  </div>
-                  <span className="font-mono font-medium">
-                    {cat.spent.toLocaleString("ru-RU")} ₽ ({cat.share}%)
+                    cutout: "70%",
+                  }}
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Всего трат</span>
+                  <span className="text-base font-black font-mono">
+                    {totalActualSpent.toLocaleString("ru-RU")} ₽
                   </span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+
+              {/* Legend list */}
+              <div className="w-full space-y-2 mt-4 text-xs">
+                {expenseCategories.map((cat, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-0.5 border-b border-border/30 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="size-2.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: doughnutData.datasets[0].backgroundColor[idx],
+                        }}
+                      />
+                      <span className="text-muted-foreground font-medium truncate max-w-[150px]">{cat.name}</span>
+                    </div>
+                    <span className="font-mono font-semibold text-foreground shrink-0">
+                      {cat.spent.toLocaleString("ru-RU")} ₽ <span className="text-muted-foreground text-[10px]">({cat.share}%)</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Plan vs Actual Bar Chart */}
-        <Card className="shadow-xs lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="size-4 text-primary" />
-              Сравнение: План vs Факт по категориям
-            </CardTitle>
+        <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/40 shadow-soft lg:col-span-2">
+          <Card className="rounded-2xl border-border/50 bg-card shadow-xs h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <BarChart3 className="size-4 text-primary" />
+                Сравнение: План vs Факт по категориям
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Выделенный лимит бюджета в сравнении с фактически совершенными списаниями
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="h-[300px] w-full">
+                <Bar
+                  data={barData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: "top" as const,
+                        labels: {
+                          boxWidth: 12,
+                          font: { size: 11, family: "Plus Jakarta Sans" },
+                        },
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (val) => `${Number(val) / 1000}k ₽`,
+                          font: { size: 10, family: "JetBrains Mono" },
+                        },
+                      },
+                      x: {
+                        ticks: { font: { size: 11, family: "Plus Jakarta Sans" } },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Detailed Category Table */}
+      <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+        <Card className="rounded-2xl border-border/50 bg-card shadow-xs">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold">Детализация расходов по типам</CardTitle>
             <CardDescription className="text-xs">
-              Выделенный лимит бюджета в сравнении с фактически совершенными списаниями
+              Подробный сводный отчет использования бюджета за {selectedMonth}
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-4">
-            <div className="h-[280px] w-full">
-              <Bar
-                data={barData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: "top" as const,
-                      labels: {
-                        boxWidth: 12,
-                        font: { size: 11 },
-                      },
-                    },
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: (val) => `${Number(val) / 1000}k ₽`,
-                        font: { size: 10 },
-                      },
-                    },
-                    x: {
-                      ticks: { font: { size: 11 } },
-                    },
-                  },
-                }}
-              />
+          <CardContent>
+            <div className="overflow-x-auto rounded-xl border border-border/60">
+              <div className="divide-y min-w-[700px]">
+                <div className="grid grid-cols-12 gap-2 p-3 bg-muted/40 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  <div className="col-span-4">Тип расхода</div>
+                  <div className="col-span-2 text-right">План / Лимит</div>
+                  <div className="col-span-2 text-right">Факт списаний</div>
+                  <div className="col-span-2 text-right">Остаток / Разница</div>
+                  <div className="col-span-2 text-center">Доля трат</div>
+                </div>
+
+                {expenseCategories.map((cat, idx) => {
+                  const Icon = cat.icon
+                  const diff = cat.plan - cat.spent
+                  const isOver = diff < 0
+
+                  return (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-12 gap-2 p-3 items-center text-xs hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="col-span-4 flex items-center gap-2.5">
+                        <div className={`p-2 rounded-xl ${cat.bg}`}>
+                          <Icon className={`size-4 ${cat.color}`} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-foreground text-sm">{cat.name}</div>
+                          <div className="text-[11px] text-muted-foreground">{cat.status}</div>
+                        </div>
+                      </div>
+
+                      <div className="col-span-2 text-right font-mono font-medium text-muted-foreground">
+                        {cat.plan.toLocaleString("ru-RU")} ₽
+                      </div>
+
+                      <div className="col-span-2 text-right font-mono font-bold text-foreground">
+                        {cat.spent.toLocaleString("ru-RU")} ₽
+                      </div>
+
+                      <div className="col-span-2 text-right font-mono font-bold">
+                        <span className={isOver ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}>
+                          {diff > 0 ? `+${diff.toLocaleString("ru-RU")}` : diff.toLocaleString("ru-RU")} ₽
+                        </span>
+                      </div>
+
+                      <div className="col-span-2 flex items-center justify-center gap-2">
+                        <div className="w-16">
+                          <Progress value={cat.share} className="h-1.5 rounded-full" />
+                        </div>
+                        <span className="font-mono text-[11px] font-semibold text-muted-foreground w-8 text-right">
+                          {cat.share}%
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Detailed Category Table */}
-      <Card className="shadow-xs">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Детализация расходов по типам</CardTitle>
-          <CardDescription className="text-xs">
-            Подробный сводный отчет использования бюджета за {selectedMonth}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="divide-y border rounded-lg overflow-hidden">
-            <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase">
-              <div className="col-span-4">Тип расхода</div>
-              <div className="col-span-2 text-right">План / Лимит</div>
-              <div className="col-span-2 text-right">Факт списаний</div>
-              <div className="col-span-2 text-right">Остаток / Разница</div>
-              <div className="col-span-2 text-center">Доля трат</div>
-            </div>
-
-            {expenseCategories.map((cat, idx) => {
-              const Icon = cat.icon
-              const diff = cat.plan - cat.spent
-              const isOver = diff < 0
-
-              return (
-                <div
-                  key={idx}
-                  className="grid grid-cols-12 gap-2 p-3 items-center text-xs hover:bg-muted/20 transition-colors"
-                >
-                  <div className="col-span-4 flex items-center gap-2.5">
-                    <div className={`p-1.5 rounded-md ${cat.bg}`}>
-                      <Icon className={`size-4 ${cat.color}`} />
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground">{cat.name}</div>
-                      <div className="text-[10px] text-muted-foreground">{cat.status}</div>
-                    </div>
-                  </div>
-
-                  <div className="col-span-2 text-right font-mono font-medium text-muted-foreground">
-                    {cat.plan.toLocaleString("ru-RU")} ₽
-                  </div>
-
-                  <div className="col-span-2 text-right font-mono font-semibold text-foreground">
-                    {cat.spent.toLocaleString("ru-RU")} ₽
-                  </div>
-
-                  <div className="col-span-2 text-right font-mono font-semibold">
-                    <span className={isOver ? "text-destructive" : "text-emerald-600"}>
-                      {diff > 0 ? `+${diff.toLocaleString("ru-RU")}` : diff.toLocaleString("ru-RU")} ₽
-                    </span>
-                  </div>
-
-                  <div className="col-span-2 flex items-center justify-center gap-2">
-                    <div className="w-16">
-                      <Progress value={cat.share} className="h-1.5" />
-                    </div>
-                    <span className="font-mono text-[11px] text-muted-foreground w-8 text-right">
-                      {cat.share}%
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Multi-month Dynamics */}
       {history.length > 1 && (
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="size-4 text-primary" />
-              Динамика доходов и расходов по месяцам
-            </CardTitle>
-            <CardDescription className="text-xs">
-              История финансовых циклов и накоплений
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="h-[260px] w-full">
-              <Line
-                data={multiMonthData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: "top" as const,
-                      labels: { boxWidth: 12, font: { size: 11 } },
-                    },
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: (val) => `${Number(val) / 1000}k ₽`,
-                        font: { size: 10 },
+        <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card shadow-xs">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <TrendingUp className="size-4 text-primary" />
+                Динамика доходов и расходов по месяцам
+              </CardTitle>
+              <CardDescription className="text-xs">
+                История финансовых циклов и накоплений
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="h-[280px] w-full">
+                <Line
+                  data={multiMonthData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: "top" as const,
+                        labels: { boxWidth: 12, font: { size: 11, family: "Plus Jakarta Sans" } },
                       },
                     },
-                  },
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (val) => `${Number(val) / 1000}k ₽`,
+                          font: { size: 10, family: "JetBrains Mono" },
+                        },
+                      },
+                      x: {
+                        ticks: { font: { size: 11, family: "Plus Jakarta Sans" } },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )

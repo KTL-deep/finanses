@@ -95,7 +95,6 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
       name: newItemName.trim(),
       amount: parseFloat(newItemAmount) || 0,
       author: newItemAuthor,
-      category: newItemCategory.trim() || "Покупки",
       done: false, // Planned item: not crossed out until purchased/checked
       date: newItemDate || new Date().toLocaleDateString("ru-RU"),
     }
@@ -286,174 +285,236 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
 
   return (
     <div className="space-y-6">
-      {/* 3 Header Cards */}
+      {/* 3 Summary Cards with Double-Bezel Architecture */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
-              Выделено на хотелки ({calc.pW}%)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              <AnimatedNumber value={allocated} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Аванс: {formatCurrency(calc.wantsAdv)} · ЗП: {formatCurrency(calc.wantsSal)}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Card 1: Allocated */}
+        <div className="p-1 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xs h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Выделено на хотелки ({calc.pW}%)
+                </CardTitle>
+                <div className="size-7 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Heart className="size-3.5 fill-primary/20" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+                <AnimatedNumber value={allocated} currency />
+              </div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                <span>Аванс: <strong className="text-foreground font-mono">{formatCurrency(calc.wantsAdv)}</strong></span>
+                <span>·</span>
+                <span>ЗП: <strong className="text-foreground font-mono">{formatCurrency(calc.wantsSal)}</strong></span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
-              Фактически списано
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              <AnimatedNumber value={spent} currency />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Тимур: {formatCurrency(timurSpent)} · Лера: {formatCurrency(leraSpent)}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Card 2: Spent with Author Distribution */}
+        <div className="p-1 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xs h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Фактически списано
+                </CardTitle>
+                <span className="text-[11px] font-mono font-bold text-muted-foreground px-2 py-0.5 rounded-full bg-muted">
+                  {pct}% бюджета
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2.5">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+                <AnimatedNumber value={spent} currency />
+              </div>
+              {/* Author Breakdown Pills */}
+              <div className="flex items-center gap-2 pt-1 text-xs">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-medium">
+                  <span className="size-2 rounded-full bg-indigo-500" />
+                  <span>Тимур:</span>
+                  <span className="font-mono font-bold">{formatCurrency(timurSpent)}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-700 dark:text-pink-300 font-medium">
+                  <span className="size-2 rounded-full bg-pink-500" />
+                  <span>Лера:</span>
+                  <span className="font-mono font-bold">{formatCurrency(leraSpent)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="shadow-xs">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
-              Остаток фонда желаний
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${remaining < 0 ? "text-destructive" : "text-emerald-600"}`}>
-              <AnimatedNumber value={remaining} currency />
+        {/* Card 3: Remaining */}
+        <div className="p-1 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+          <Card className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xs h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Остаток фонда желаний
+                </CardTitle>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  remaining >= 0
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-destructive/10 text-destructive"
+                }`}>
+                  {remaining >= 0 ? "В норме" : "Превышен"}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                remaining < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"
+              }`}>
+                <AnimatedNumber value={remaining} currency />
+              </div>
+              <div className="space-y-1">
+                <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 rounded-full ${
+                      pct > 90 ? "bg-destructive" : pct > 70 ? "bg-amber-500" : "bg-emerald-500"
+                    }`}
+                    style={{ width: `${Math.min(100, pct)}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground flex justify-between font-medium">
+                  <span>Осталось {Math.max(0, 100 - pct)}% фонда</span>
+                  <span>{activeItemsCount} не куплено</span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Quick Add with Double-Bezel Framing */}
+      <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+        <Card className="rounded-2xl border-border/50 bg-card shadow-xs">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Heart className="size-4 text-primary fill-primary/20" />
+                Добавить новую хотелку в Wish-лист
+              </CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTagsManagerOpen(true)}
+                className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 rounded-lg active:scale-95 transition-all"
+              >
+                <Tag className="size-3 text-primary" />
+                Настроить теги ({currentTags.length})
+              </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {remaining >= 0 ? "В пределах бюджета" : "Лимит превышен"}
-            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <form onSubmit={handleAddItem} className="flex flex-col sm:flex-row gap-2.5">
+              <Select value={newItemAuthor} onValueChange={setNewItemAuthor}>
+                <SelectTrigger className="w-full sm:w-36 h-10 rounded-xl text-base sm:text-sm font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="timur">Тимур</SelectItem>
+                  <SelectItem value="lera">Лера</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Input
+                placeholder="Что хочется купить? (напр. Наушники, Одежда)"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                className="flex-1 h-10 rounded-xl text-base sm:text-sm"
+              />
+              <Input
+                placeholder="Категория"
+                value={newItemCategory}
+                onChange={(e) => setNewItemCategory(e.target.value)}
+                className="w-full sm:w-40 h-10 rounded-xl text-base sm:text-sm"
+              />
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="Сумма ₽"
+                value={newItemAmount}
+                onChange={(e) => setNewItemAmount(e.target.value)}
+                className="w-full sm:w-36 h-10 rounded-xl text-base sm:text-sm font-mono font-medium"
+              />
+              <Button type="submit" className="gap-2 shrink-0 h-10 px-5 rounded-xl font-semibold shadow-xs active:scale-95 transition-all">
+                <Plus className="size-4" />
+                Добавить
+              </Button>
+            </form>
+
+            {/* Quick Tag Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
+              <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1 mr-1 uppercase tracking-wider">
+                <Tag className="size-3 text-primary" /> Категории:
+              </span>
+              {currentTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setNewItemCategory(tag)}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all cursor-pointer active:scale-95 ${
+                    newItemCategory === tag
+                      ? "bg-primary/10 border-primary text-primary font-semibold shadow-xs"
+                      : "bg-muted/30 border-border/60 hover:bg-muted/80 text-foreground"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Add */}
-      <Card className="shadow-xs">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Heart className="size-4 text-primary" />
-              Добавить новую хотелку в Wish-лист
-            </CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setTagsManagerOpen(true)}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
-            >
-              <Tag className="size-3.5 text-primary" />
-              Настроить теги ({currentTags.length})
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <form onSubmit={handleAddItem} className="flex flex-col sm:flex-row gap-3">
-            <Select value={newItemAuthor} onValueChange={setNewItemAuthor}>
-              <SelectTrigger className="w-full sm:w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="timur">Тимур</SelectItem>
-                <SelectItem value="lera">Лера</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              placeholder="Что хочется купить? (напр. Наушники, Курс, Одежда)"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              className="flex-1"
-            />
-            <Input
-              placeholder="Категория"
-              value={newItemCategory}
-              onChange={(e) => setNewItemCategory(e.target.value)}
-              className="w-full sm:w-36"
-            />
-            <Input
-              type="number"
-              placeholder="Сумма ₽"
-              value={newItemAmount}
-              onChange={(e) => setNewItemAmount(e.target.value)}
-              className="w-full sm:w-32"
-            />
-            <Button type="submit" className="gap-1.5 shrink-0">
-              <Plus className="size-4" />
-              Добавить
-            </Button>
-          </form>
-
-          {/* Quick Tag Chips */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border/40">
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1 mr-1">
-              <Tag className="size-3" /> Категории:
-            </span>
-            {currentTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => setNewItemCategory(tag)}
-                className="text-[11px] px-2 py-0.5 rounded-md border bg-muted/40 hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-colors cursor-pointer"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* DataTable */}
-      <Card className="shadow-xs">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <CardTitle className="text-base">Wish-лист семьи</CardTitle>
-              <CardDescription className="text-xs">
-                Список желаний семьи; при покупке отметьте галочкой для списания из бюджета
-              </CardDescription>
+      {/* DataTable in Double-Bezel Framing */}
+      <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/40 shadow-soft">
+        <Card className="rounded-2xl border-border/50 bg-card shadow-xs">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold">Wish-лист семьи</CardTitle>
+                <CardDescription className="text-xs">
+                  Список желаний семьи; при покупке отметьте галочкой для списания из бюджета
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={hideDone ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setHideDone(!hideDone)}
+                  className="h-8 text-xs gap-1.5 rounded-lg active:scale-95 transition-all"
+                >
+                  {hideDone ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                  {hideDone ? `Показать все (${items.length})` : `Скрыть купленные (${items.length - activeItemsCount})`}
+                </Button>
+                <Badge variant="secondary" className="font-mono text-xs rounded-lg px-2 py-0.5">
+                  {displayItems.length} из {items.length}
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={hideDone ? "default" : "outline"}
-                size="sm"
-                onClick={() => setHideDone(!hideDone)}
-                className="h-8 text-xs gap-1.5 shadow-xs"
-              >
-                {hideDone ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                {hideDone ? `Показать все (${items.length})` : `Скрыть купленные (${items.length - activeItemsCount})`}
-              </Button>
-              <Badge variant="secondary" className="font-mono text-xs">
-                Показано: {displayItems.length} из {items.length}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={displayItems}
-            getRowId={(row) => String(row.id)}
-            searchPlaceholder="Поиск по желаниям и категориям..."
-            searchableText={(row) => `${row.name} ${row.category || ""} ${row.author || ""} ${row.amount}`}
-            enableSorting
-            enableRowSelection={false}
-            rowActions={rowActions}
-            exportFileName={`wants-${new Date().toISOString().slice(0, 7)}.csv`}
-            emptyMessage={hideDone ? "Все запланированные желания из списка куплены!" : "Список желаний пуст. Добавьте запланированную покупку выше."}
-          />
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <DataTable
+              columns={columns}
+              data={displayItems}
+              getRowId={(row) => String(row.id)}
+              searchPlaceholder="Поиск по желаниям и категориям..."
+              searchableText={(row) => `${row.name} ${row.category || ""} ${row.author || ""} ${row.amount}`}
+              enableSorting
+              enableRowSelection={false}
+              rowActions={rowActions}
+              exportFileName={`wants-${new Date().toISOString().slice(0, 7)}.csv`}
+              emptyMessage={hideDone ? "Все запланированные желания из списка куплены!" : "Список желаний пуст. Добавьте запланированную покупку выше."}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Edit Item Dialog */}
       <Dialog open={Boolean(editingItem)} onOpenChange={(open) => !open && setEditingItem(null)}>
@@ -504,9 +565,11 @@ export function WantsView({ state, currentUser, onUpdateState }: WantsViewProps)
                 <Label className="text-xs">Сумма (₽)</Label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   value={editAmount}
                   onChange={(e) => setEditAmount(e.target.value)}
                   placeholder="0"
+                  className="font-mono"
                 />
               </div>
             </div>

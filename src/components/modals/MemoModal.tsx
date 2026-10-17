@@ -51,7 +51,7 @@ export function MemoModal({ open, onOpenChange, state, onSave }: MemoModalProps)
             placeholder="Введите любые заметки или комментарии к бюджету этого месяца..."
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full p-3 rounded-lg border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+            className="w-full p-3.5 rounded-xl border border-border bg-background text-base sm:text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none font-sans"
           />
         </div>
 

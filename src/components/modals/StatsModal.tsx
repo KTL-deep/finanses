@@ -78,7 +78,7 @@ export function StatsModal({ open, onOpenChange }: StatsModalProps) {
         tension: 0.3,
       },
       {
-        label: "Обязательные + Цели (₽)",
+        label: "Кредитка + Обязательные + Цели (₽)",
         data: fixedAndGoalsData.length > 0 ? fixedAndGoalsData : [102500],
         borderColor: "#ef4444",
         backgroundColor: "rgba(239, 68, 68, 0.1)",

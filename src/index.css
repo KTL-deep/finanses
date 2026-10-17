@@ -4,65 +4,68 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 220 18% 98%;
+    --foreground: 224 25% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 224 25% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 224 25% 12%;
 
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 220 14% 93%;
+    --accent-foreground: 222 47% 11%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 222 47% 11%;
 
-    --radius: 0.5rem;
+    --radius: 0.875rem;
+
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 240 10% 4.5%;
+    --foreground: 210 20% 98%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 240 8% 7.5%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 8% 8%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 210 20% 98%;
+    --primary-foreground: 240 10% 6%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 210 20% 98%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 240 5% 62%;
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 240 6% 14%;
+    --accent-foreground: 210 20% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 42%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 240 6% 14.5%;
+    --input: 240 6% 15%;
+    --ring: 240 5% 84%;
   }
 }
 
@@ -74,24 +77,38 @@
   html {
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground antialiased font-sans;
     line-height: 1.5;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
+    overscroll-behavior: none;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
+  input, textarea, select {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+  }
+  button, [role="button"], a {
+    touch-action: manipulation;
+  }
+  button, [role="button"], .tab, .chip, .drag-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
 }
 
 @layer utilities {
   .safe-top {
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-top: max(env(safe-area-inset-top, 0px), 8px);
   }
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
@@ -99,5 +116,31 @@
   .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .glass-card {
+    background-color: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+  .glass-nav {
+    background-color: hsl(var(--background) / 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+  .double-bezel {
+    border-radius: calc(var(--radius) + 8px);
+    border: 1px solid hsl(var(--border) / 0.65);
+    background-color: hsl(var(--muted) / 0.35);
+    padding: 0.375rem;
+  }
+  .double-bezel-inner {
+    border-radius: var(--radius);
+    background-color: hsl(var(--card));
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
   }
 }

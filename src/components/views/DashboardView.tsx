@@ -5,10 +5,8 @@ import {
   CreditCard,
   Target,
   ArrowUpRight,
-  ShieldAlert,
   Eye,
   EyeOff,
-  Zap,
   ShoppingBag,
   ArrowRight,
   Settings2,
@@ -39,6 +37,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { AnimatedNumber } from "@/components/corr/animated-number"
 import { calculateFinance, formatCurrency } from "@/lib/calculations"
+import { cn } from "@/lib/utils"
 import type { MonthlyPlanState, User, GoalItem } from "@/types/finance"
 
 interface DashboardViewProps {
@@ -47,7 +46,6 @@ interface DashboardViewProps {
   currentUser: User | null
   onUpdateState: (newState: MonthlyPlanState) => void
   onOpenEditModal: () => void
-  onOpenCreditModal: () => void
   onOpenStatsModal: () => void
   onOpenTBankModal: () => void
   onOpenMemoModal: () => void
@@ -62,7 +60,6 @@ export function DashboardView({
   currentUser,
   onUpdateState,
   onOpenEditModal,
-  onOpenCreditModal,
   onOpenStatsModal,
   onOpenTBankModal,
   onOpenMemoModal,
@@ -84,6 +81,36 @@ export function DashboardView({
     if (!g.isSecret) return true
     return isAdmin || showSecretGoals
   })
+
+  function getGoalTransfers(phase: "advance" | "salary") {
+    const goals = state.goals || []
+    const phaseTotal = phase === "advance" ? calc.goalsAdvTotal : calc.goalsSalTotal
+    const ratio = phase === "advance" ? calc.rAdv : calc.rSal
+    let distributed = 0
+
+    const transfers = goals.map((goal, index) => {
+      const monthly = Math.round(goal.target / (goal.months > 0 ? goal.months : 12))
+      const amount = index === goals.length - 1
+        ? Math.max(0, phaseTotal - distributed)
+        : Math.round(monthly * ratio)
+      distributed += amount
+      return { goal, amount }
+    })
+
+    if (isAdmin) return transfers
+
+    const publicTransfers = transfers.filter(({ goal }) => !goal.isSecret)
+    const secretAmount = transfers
+      .filter(({ goal }) => goal.isSecret)
+      .reduce((sum, item) => sum + item.amount, 0)
+
+    return secretAmount > 0
+      ? [...publicTransfers, { goal: { id: "secret", name: "Целевые накопления", target: 0, months: 1, saved: 0 }, amount: secretAmount }]
+      : publicTransfers
+  }
+
+  const advanceGoalTransfers = getGoalTransfers("advance")
+  const salaryGoalTransfers = getGoalTransfers("salary")
 
   // Recent transactions list from state
   const recentTransactions = [
@@ -117,10 +144,14 @@ export function DashboardView({
     <div className="space-y-6">
       {/* Top Header Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Панель управления</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Точное распределение финансов семьи по фазам и фондам
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[10.5px] uppercase tracking-[0.18em] font-semibold bg-primary/10 text-primary border border-primary/20 w-fit">
+            <Sparkles className="size-3" />
+            Двухфазный бюджет
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Панель управления</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Баланс семьи, списания по фазам и контроль 4 свободных фондов
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -128,12 +159,12 @@ export function DashboardView({
             variant="outline"
             size="sm"
             onClick={onOpenRollOverModal}
-            className="text-xs h-9 gap-1.5 shadow-xs border-emerald-500/40 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium"
+            className="text-xs h-9 px-3.5 gap-2 border-emerald-500/40 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold rounded-xl transition-all shadow-xs"
           >
-            <ArrowRightLeft className="size-4 text-emerald-600 dark:text-emerald-400" />
-            Перенос остатков
+            <ArrowRightLeft className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Перенос остатков</span>
             {(Math.max(0, calc.remGroc) + Math.max(0, calc.remWants) + Math.max(0, calc.remUnplan)) > 0 && (
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+              <Badge variant="secondary" className="ml-0.5 px-1.5 py-0 text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-md">
                 +{formatMoney(Math.max(0, calc.remGroc) + Math.max(0, calc.remWants) + Math.max(0, calc.remUnplan))}
               </Badge>
             )}
@@ -142,16 +173,16 @@ export function DashboardView({
             variant="outline"
             size="sm"
             onClick={onOpenTBankModal}
-            className="text-xs h-9 gap-1.5 shadow-xs"
+            className="text-xs h-9 px-3 gap-1.5 rounded-xl border-border/80 shadow-xs hover:bg-accent"
           >
-            <FileSpreadsheet className="size-4 text-muted-foreground" />
+            <FileSpreadsheet className="size-3.5 text-muted-foreground" />
             Импорт Т-Банка
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={onOpenMemoModal}
-            className="text-xs h-9 gap-1.5 shadow-xs"
+            className="text-xs h-9 px-3 gap-1.5 rounded-xl border-border/80 shadow-xs hover:bg-accent"
           >
             Заметки
           </Button>
@@ -160,52 +191,41 @@ export function DashboardView({
               variant="default"
               size="sm"
               onClick={onOpenEditModal}
-              className="text-xs h-9 gap-1.5 shadow-xs"
+              className="text-xs h-9 px-3.5 gap-2 rounded-xl shadow-soft"
             >
-              <Settings2 className="size-4" />
-              Настроить план
+              <Settings2 className="size-3.5" />
+              <span>Настройки плана</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Credit card alert banner */}
-      {calc.ccAmount > 0 && !calc.ccIsPaid && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border border-destructive/30 bg-destructive/5 text-foreground shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-              <ShieldAlert className="size-5" />
-            </div>
-            <div>
-              <div className="font-semibold text-sm">
-                Кредитная задолженность к погашению: {formatMoney(calc.ccAmount)}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Списание в 1-ю очередь:{" "}
-                <span className="font-medium text-foreground">
-                  {calc.ccPhase === "salary" ? "Фаза 2 (Зарплата)" : "Фаза 1 (Аванс)"}
-                </span>{" "}
-                | Ожидает закрытия при поступлении дохода
-              </div>
-            </div>
+      {/* Credit card payoff fact */}
+      {calc.ccAmount > 0 && (
+        <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 text-foreground shadow-xs">
+          <div className="size-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <CreditCard className="size-5" />
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={onOpenCreditModal}
-              className="font-medium text-xs shadow-xs"
-            >
-              <Zap className="mr-1.5 size-3.5" />
-              Погасить долг ({formatMoney(calc.ccAmount)})
-            </Button>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-sm tracking-tight flex items-center gap-2">
+              Кредитная карта закрыта на сумму {formatMoney(calc.ccAmount)}
+              <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600">
+                1-й приоритет
+              </Badge>
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              Списано в первую очередь:{" "}
+              <span className="font-medium text-foreground">
+                {calc.ccPhase === "salary" ? "15-е число (Зарплата)" : "1-е число (Аванс)"}
+              </span>
+            </div>
           </div>
         </div>
       )}
 
       {/* Warning if totalPct != 100 */}
       {Math.abs(calc.totalPct - 100) > 0.1 && (
-        <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2.5 shadow-xs">
           <AlertTriangle className="size-4 shrink-0 text-amber-600" />
           <span>
             Внимание: Сумма долей распределения не равна 100% ({calc.totalPct}%). Настройте проценты в параметрах плана.
@@ -213,215 +233,333 @@ export function DashboardView({
         </div>
       )}
 
-      {/* 4 Main Stat Cards */}
+      {/* High-End Asymmetrical Bento Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Income */}
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Общий доход</CardTitle>
-            <DollarSign className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight">
-              <AnimatedNumber value={calc.totalInc} currency />
+        {/* Total Income Card (Span 2 on large screens) */}
+        <div className="md:col-span-2 rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/20 p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <DollarSign className="size-3.5 text-primary" />
+                Общий ежемесячный доход
+              </div>
+              <div className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 font-mono">
+                <AnimatedNumber value={calc.totalInc} currency />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Аванс: {formatMoney(calc.incAdv)} · ЗП: {formatMoney(calc.incSal)}
-            </p>
-          </CardContent>
-        </Card>
+            <Badge variant="outline" className="font-mono text-xs px-2 py-0.5 rounded-lg border-border/80">
+              2 фазы
+            </Badge>
+          </div>
 
-        {/* Mandatory + Goals */}
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Обязательные + Цели</CardTitle>
-            <CreditCard className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight">
-              <AnimatedNumber value={calc.totalFixedAndGoals} currency />
+          <div className="mt-5 space-y-2 pt-3 border-t border-border/60">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-2.5 rounded-xl bg-muted/40 border border-border/40">
+                <div className="text-muted-foreground text-[11px] font-medium">1-е число · Аванс</div>
+                <div className="font-bold text-sm sm:text-base font-mono mt-0.5 text-foreground">
+                  {formatMoney(calc.incAdv)}
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-muted/40 border border-border/40">
+                <div className="text-muted-foreground text-[11px] font-medium">15-е число · Зарплата</div>
+                <div className="font-bold text-sm sm:text-base font-mono mt-0.5 text-foreground">
+                  {formatMoney(calc.incSal)}
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              ЖКУ ({formatMoney(calc.comm)}) + Аренда ({formatMoney(calc.rent)}) + Цели ({formatMoney(calc.totalMonthlyGoals)})
-            </p>
-          </CardContent>
-        </Card>
+            {/* Visual ratio bar */}
+            <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden flex">
+              <div
+                className="bg-primary h-full"
+                style={{ width: `${calc.totalInc > 0 ? (calc.incAdv / calc.totalInc) * 100 : 50}%` }}
+                title="Доля аванса"
+              />
+              <div
+                className="bg-primary/40 h-full"
+                style={{ width: `${calc.totalInc > 0 ? (calc.incSal / calc.totalInc) * 100 : 50}%` }}
+                title="Доля зарплаты"
+              />
+            </div>
+          </div>
+        </div>
 
-        {/* Free Cash for Living */}
-        <Card className="shadow-xs border-primary/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Свободный фонд жизни</CardTitle>
-            <Target className="size-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-primary">
+        {/* Free Cash for Living Card */}
+        <Card className="rounded-3xl border-primary/30 bg-primary/[0.02] shadow-xs flex flex-col justify-between p-5">
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Target className="size-3.5" />
+                Свободный фонд жизни
+              </div>
+              <span className="size-2 rounded-full bg-primary" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-2 text-primary font-mono">
               <AnimatedNumber value={calc.totalFree} currency />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Аванс: {formatMoney(calc.phase1Free)} · ЗП: {formatMoney(calc.phase2Free)}
+              На продукты, хотелки, резерв и подушку
             </p>
-          </CardContent>
+          </div>
+          <div className="mt-4 pt-3 border-t border-border/50 text-xs space-y-1">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Аванс (свободно):</span>
+              <span className="font-mono font-medium text-foreground">{formatMoney(calc.phase1Free)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>ЗП (свободно):</span>
+              <span className="font-mono font-medium text-foreground">{formatMoney(calc.phase2Free)}</span>
+            </div>
+          </div>
         </Card>
 
-        {/* Extra Savings Allocated */}
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Подушка / Сбережения</CardTitle>
-            <TrendingUp className="size-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              <AnimatedNumber value={calc.allocatedSave} currency />
+        {/* Mandatory & Goals Card */}
+        <Card className="rounded-3xl shadow-xs flex flex-col justify-between p-5">
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <CreditCard className="size-3.5 text-muted-foreground" />
+                Обязательства & Цели
+              </div>
+              <Badge variant="secondary" className="text-[10px] font-mono">
+                Фиксировано
+              </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Доля {calc.pS}% от свободного остатка
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight mt-2 font-mono">
+              <AnimatedNumber value={calc.totalFixedAndGoals} currency />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 truncate">
+              ЖКУ ({formatMoney(calc.comm)}) + Аренда ({formatMoney(calc.rent)})
             </p>
-          </CardContent>
+          </div>
+          <div className="mt-4 pt-3 border-t border-border/50 text-xs space-y-1">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Цели (накопления):</span>
+              <span className="font-mono font-medium text-foreground">{formatMoney(calc.totalMonthlyGoals)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Погашение долга:</span>
+              <span className="font-mono font-medium text-foreground">{formatMoney(calc.ccAmount)}</span>
+            </div>
+          </div>
         </Card>
       </div>
 
       {/* Two-Phase Salary Architecture Cards */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2">
         {/* Phase 1 (1st - Advance) */}
-        <Card className="shadow-xs">
-          <CardHeader className="border-b bg-muted/20 pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-semibold text-xs">
+        <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/80 shadow-xs">
+          <div className="rounded-2xl bg-card p-5 border border-border/50 shadow-xs space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <div className="flex items-center gap-2.5">
+                <Badge variant="outline" className="font-mono font-semibold text-xs px-2.5 py-0.5 rounded-lg border-primary/30 text-primary bg-primary/5">
                   1-е число
                 </Badge>
-                <CardTitle className="text-base font-semibold">
-                  Фаза 1: Аванс
-                </CardTitle>
+                <div>
+                  <h3 className="text-base font-bold tracking-tight">Фаза 1: Аванс</h3>
+                  <p className="text-[11px] text-muted-foreground">Первая половина месяца</p>
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-muted-foreground font-medium">Доход фазы</div>
-                <div className="text-base font-bold font-mono">{formatMoney(calc.incAdv)}</div>
+                <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground font-semibold">Доход фазы</div>
+                <div className="text-lg font-extrabold font-mono text-foreground">{formatMoney(calc.incAdv)}</div>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b">
+
+            {/* Income breakdown */}
+            <div className="space-y-1.5 text-xs bg-muted/30 p-3 rounded-xl border border-border/40">
+              <div className="flex justify-between py-1 border-b border-border/40">
                 <span className="text-muted-foreground">Тимур (аванс):</span>
-                <span className="font-medium">{formatMoney(state.incomes?.tAdv || 0)}</span>
+                <span className="font-semibold font-mono">{formatMoney(state.incomes?.tAdv || 0)}</span>
               </div>
-              <div className="flex justify-between py-1 border-b">
+              <div className="flex justify-between py-1 border-b border-border/40">
                 <span className="text-muted-foreground">Лера (аванс):</span>
-                <span className="font-medium">{formatMoney(state.incomes?.lAdv || 0)}</span>
+                <span className="font-semibold font-mono">{formatMoney(state.incomes?.lAdv || 0)}</span>
               </div>
               {(state.incomes?.extraAdv || 0) > 0 && (
-                <div className="flex justify-between py-1 border-b text-emerald-600">
+                <div className="flex justify-between py-1 text-emerald-600 dark:text-emerald-400 font-medium">
                   <span>Доп. поступления:</span>
-                  <span className="font-medium">+{formatMoney(state.incomes.extraAdv)}</span>
+                  <span className="font-mono">+{formatMoney(state.incomes.extraAdv)}</span>
                 </div>
               )}
             </div>
 
-            <div className="rounded-lg bg-muted/40 p-3 space-y-2 text-xs">
-              <div className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground">
-                Списания фазы 1:
+            {/* Deductions breakdown */}
+            <div className="rounded-xl bg-muted/40 p-3.5 space-y-2.5 text-xs border border-border/50">
+              <div className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center justify-between">
+                <span>Обязательные списания:</span>
+                <span className="font-mono text-destructive font-semibold">
+                  −{formatMoney((calc.ccAdv || 0) + calc.comm + calc.goalsAdvTotal)}
+                </span>
               </div>
               {calc.ccAdv > 0 && (
-                <div className="flex justify-between">
-                  <span>0. Кредитная карта:</span>
-                  <span className={calc.ccIsPaid ? "line-through text-emerald-600 font-medium" : "text-destructive font-semibold"}>
-                    {formatMoney(calc.ccAdv)} {calc.ccIsPaid && "(погашена)"}
+                <div className="flex justify-between py-0.5">
+                  <span className="text-muted-foreground">0. Кредитная карта:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
+                    {formatMoney(calc.ccAdv)} (погашена)
                   </span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span>1. ЖКУ / Коммуналка:</span>
-                <span className="font-semibold">{formatMoney(calc.comm)}</span>
+              <div className="flex justify-between py-0.5">
+                <span className="text-muted-foreground">1. ЖКУ / Коммуналка:</span>
+                <span className="font-semibold font-mono">{formatMoney(calc.comm)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>2. Взнос в финансовые цели ({Math.round(calc.rAdv * 100)}%):</span>
-                <span className="font-semibold">{formatMoney(calc.goalsAdvTotal)}</span>
+              <div className="flex justify-between py-0.5">
+                <span className="text-muted-foreground">2. Взнос в финансовые цели ({Math.round(calc.rAdv * 100)}%):</span>
+                <span className="font-semibold font-mono">{formatMoney(calc.goalsAdvTotal)}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t font-bold text-sm text-primary">
+              {advanceGoalTransfers.map(({ goal, amount }) => (
+                <div key={goal.id} className="flex justify-between gap-3 pl-4 text-[11px] text-muted-foreground">
+                  <span className="truncate">↳ {goal.name}</span>
+                  <span className="font-medium font-mono text-foreground shrink-0">{formatMoney(amount)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2.5 border-t border-border/60 font-bold text-sm text-primary">
                 <span>Свободный остаток аванса:</span>
                 <span className="font-mono">{formatMoney(calc.phase1Free)}</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Phase 2 (15th - Salary) */}
-        <Card className="shadow-xs">
-          <CardHeader className="border-b bg-muted/20 pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-semibold text-xs">
-                  15-е число
-                </Badge>
-                <CardTitle className="text-base font-semibold">
-                  Фаза 2: Зарплата
-                </CardTitle>
+            {/* 4-fund Allocation for Phase 1 */}
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3.5 space-y-2 text-xs">
+              <div className="font-bold uppercase tracking-wider text-[10.5px] text-primary flex items-center justify-between">
+                <span>Распределение свободного остатка</span>
+                <span className="text-[10px] text-muted-foreground font-normal">100%</span>
               </div>
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground font-medium">Доход фазы</div>
-                <div className="text-base font-bold font-mono">{formatMoney(calc.incSal)}</div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {[
+                  ["Продукты", calc.grocAdv, `${calc.pG}%`],
+                  ["Хотелки", calc.wantsAdv, `${calc.pW}%`],
+                  ["Внеплан", calc.unplanAdv, `${calc.pU}%`],
+                  ["Подушка", calc.saveAdv, `${calc.pS}%`],
+                ].map(([label, amount, pct]) => (
+                  <div key={String(label)} className="p-2 rounded-lg bg-card/80 border border-border/50 flex flex-col justify-between">
+                    <span className="text-muted-foreground text-[10.5px] font-medium flex justify-between">
+                      {label}
+                      <span className="font-mono text-muted-foreground/70">{pct}</span>
+                    </span>
+                    <span className="font-bold font-mono text-foreground text-xs sm:text-sm mt-0.5">
+                      {formatMoney(Number(amount))}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b">
-                <span className="text-muted-foreground">Тимур (зарплата):</span>
-                <span className="font-medium">{formatMoney(state.incomes?.tSal || 0)}</span>
+          </div>
+        </div>
+
+        {/* Phase 2 (15th - Salary) */}
+        <div className="p-1 sm:p-1.5 rounded-3xl bg-muted/40 border border-border/80 shadow-xs">
+          <div className="rounded-2xl bg-card p-5 border border-border/50 shadow-xs space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <div className="flex items-center gap-2.5">
+                <Badge variant="outline" className="font-mono font-semibold text-xs px-2.5 py-0.5 rounded-lg border-indigo-500/30 text-indigo-600 dark:text-indigo-400 bg-indigo-500/5">
+                  15-е число
+                </Badge>
+                <div>
+                  <h3 className="text-base font-bold tracking-tight">Фаза 2: Зарплата</h3>
+                  <p className="text-[11px] text-muted-foreground">Вторая половина месяца</p>
+                </div>
               </div>
-              <div className="flex justify-between py-1 border-b">
+              <div className="text-right">
+                <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground font-semibold">Доход фазы</div>
+                <div className="text-lg font-extrabold font-mono text-foreground">{formatMoney(calc.incSal)}</div>
+              </div>
+            </div>
+
+            {/* Income breakdown */}
+            <div className="space-y-1.5 text-xs bg-muted/30 p-3 rounded-xl border border-border/40">
+              <div className="flex justify-between py-1 border-b border-border/40">
+                <span className="text-muted-foreground">Тимур (зарплата):</span>
+                <span className="font-semibold font-mono">{formatMoney(state.incomes?.tSal || 0)}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-border/40">
                 <span className="text-muted-foreground">Лера (зарплата):</span>
-                <span className="font-medium">{formatMoney(state.incomes?.lSal || 0)}</span>
+                <span className="font-semibold font-mono">{formatMoney(state.incomes?.lSal || 0)}</span>
               </div>
               {(state.incomes?.extraSal || 0) > 0 && (
-                <div className="flex justify-between py-1 border-b text-emerald-600">
+                <div className="flex justify-between py-1 text-emerald-600 dark:text-emerald-400 font-medium">
                   <span>Доп. поступления:</span>
-                  <span className="font-medium">+{formatMoney(state.incomes.extraSal)}</span>
+                  <span className="font-mono">+{formatMoney(state.incomes.extraSal)}</span>
                 </div>
               )}
             </div>
 
-            <div className="rounded-lg bg-muted/40 p-3 space-y-2 text-xs">
-              <div className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground">
-                Списания фазы 2:
+            {/* Deductions breakdown */}
+            <div className="rounded-xl bg-muted/40 p-3.5 space-y-2.5 text-xs border border-border/50">
+              <div className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center justify-between">
+                <span>Обязательные списания:</span>
+                <span className="font-mono text-destructive font-semibold">
+                  −{formatMoney((calc.ccSal || 0) + calc.rent + calc.goalsSalTotal)}
+                </span>
               </div>
               {calc.ccSal > 0 && (
-                <div className="flex justify-between">
-                  <span>0. Кредитная карта:</span>
-                  <span className={calc.ccIsPaid ? "line-through text-emerald-600 font-medium" : "text-destructive font-semibold"}>
-                    {formatMoney(calc.ccSal)} {calc.ccIsPaid && "(погашена)"}
+                <div className="flex justify-between py-0.5">
+                  <span className="text-muted-foreground">0. Кредитная карта:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
+                    {formatMoney(calc.ccSal)} (погашена)
                   </span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span>1. Аренда квартиры:</span>
-                <span className="font-semibold">{formatMoney(calc.rent)}</span>
+              <div className="flex justify-between py-0.5">
+                <span className="text-muted-foreground">1. Аренда квартиры:</span>
+                <span className="font-semibold font-mono">{formatMoney(calc.rent)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>2. Взнос в финансовые цели ({Math.round(calc.rSal * 100)}%):</span>
-                <span className="font-semibold">{formatMoney(calc.goalsSalTotal)}</span>
+              <div className="flex justify-between py-0.5">
+                <span className="text-muted-foreground">2. Взнос в финансовые цели ({Math.round(calc.rSal * 100)}%):</span>
+                <span className="font-semibold font-mono">{formatMoney(calc.goalsSalTotal)}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t font-bold text-sm text-primary">
+              {salaryGoalTransfers.map(({ goal, amount }) => (
+                <div key={goal.id} className="flex justify-between gap-3 pl-4 text-[11px] text-muted-foreground">
+                  <span className="truncate">↳ {goal.name}</span>
+                  <span className="font-medium font-mono text-foreground shrink-0">{formatMoney(amount)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2.5 border-t border-border/60 font-bold text-sm text-primary">
                 <span>Свободный остаток зарплаты:</span>
                 <span className="font-mono">{formatMoney(calc.phase2Free)}</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* 4-fund Allocation for Phase 2 */}
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3.5 space-y-2 text-xs">
+              <div className="font-bold uppercase tracking-wider text-[10.5px] text-primary flex items-center justify-between">
+                <span>Распределение свободного остатка</span>
+                <span className="text-[10px] text-muted-foreground font-normal">100%</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {[
+                  ["Продукты", calc.grocSal, `${calc.pG}%`],
+                  ["Хотелки", calc.wantsSal, `${calc.pW}%`],
+                  ["Внеплан", calc.unplanSal, `${calc.pU}%`],
+                  ["Подушка", calc.saveSal, `${calc.pS}%`],
+                ].map(([label, amount, pct]) => (
+                  <div key={String(label)} className="p-2 rounded-lg bg-card/80 border border-border/50 flex flex-col justify-between">
+                    <span className="text-muted-foreground text-[10.5px] font-medium flex justify-between">
+                      {label}
+                      <span className="font-mono text-muted-foreground/70">{pct}</span>
+                    </span>
+                    <span className="font-bold font-mono text-foreground text-xs sm:text-sm mt-0.5">
+                      {formatMoney(Number(amount))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 4 Category Allocation Cards (55% Groceries, 20% Wants, 10% Unplanned, 15% Savings) */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
+      {/* 4 Category Allocation Cards with visual meters */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold">Распределение свободного бюджета жизни</h3>
+            <h3 className="text-base sm:text-lg font-bold tracking-tight">Распределение свободного бюджета жизни</h3>
             <p className="text-xs text-muted-foreground">
               Автоматический расчет лимитов от свободного фонда ({formatMoney(calc.totalFree)})
             </p>
           </div>
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={onOpenEditModal} className="text-xs h-7">
+            <Button variant="outline" size="sm" onClick={onOpenEditModal} className="text-xs h-7.5 rounded-lg border-border/80">
               Настроить %
             </Button>
           )}
@@ -429,133 +567,205 @@ export function DashboardView({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Groceries Card */}
-          <Card className="shadow-xs cursor-pointer hover:border-primary/50 transition-colors" onClick={() => onNavigateTab("groceries")}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5 truncate">
-                  <ShoppingCart className="size-3.5 shrink-0" />
-                  <span>Продукты ({calc.pG}%)</span>
-                </CardTitle>
-                <Badge variant="secondary" className="text-[10px] shrink-0">
-                  Остаток: {formatMoney(calc.remGroc)}
-                </Badge>
+          <div
+            onClick={() => onNavigateTab("groceries")}
+            className="group p-5 rounded-3xl border border-border/80 bg-card hover:border-primary/50 shadow-xs cursor-pointer transition-all duration-200 active:scale-[0.98] space-y-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                <div className="size-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                  <ShoppingCart className="size-3.5" />
+                </div>
+                <span>Продукты ({calc.pG}%)</span>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              <div className="text-xl font-bold tracking-tight font-mono">
+              <Badge variant={calc.remGroc < 0 ? "destructive" : "secondary"} className="text-[10.5px] font-mono font-semibold rounded-md">
+                Остаток: {formatMoney(calc.remGroc)}
+              </Badge>
+            </div>
+
+            <div>
+              <div className="text-2xl font-extrabold tracking-tight font-mono text-foreground">
                 {formatMoney(calc.allocatedGroc)}
               </div>
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                 1-е: {formatMoney(calc.grocAdv)} · 15-е: {formatMoney(calc.grocSal)}
               </p>
-              <div className="text-[11px] pt-1 text-muted-foreground flex justify-between border-t border-border/40">
-                <span>Факт потрачено:</span>
-                <span className="font-medium text-foreground font-mono">{formatMoney(calc.spentGroc)}</span>
+            </div>
+
+            {/* Spend progress bar */}
+            <div className="space-y-1">
+              <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    calc.allocatedGroc > 0 && (calc.spentGroc / calc.allocatedGroc) > 1
+                      ? "bg-destructive"
+                      : (calc.spentGroc / calc.allocatedGroc) > 0.85
+                        ? "bg-amber-500"
+                        : "bg-blue-500"
+                  )}
+                  style={{ width: `${calc.allocatedGroc > 0 ? Math.min(100, Math.round((calc.spentGroc / calc.allocatedGroc) * 100)) : 0}%` }}
+                />
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-[11px] flex justify-between text-muted-foreground font-mono">
+                <span>Факт: {formatMoney(calc.spentGroc)}</span>
+                <span>{calc.allocatedGroc > 0 ? Math.round((calc.spentGroc / calc.allocatedGroc) * 100) : 0}%</span>
+              </div>
+            </div>
+          </div>
 
           {/* Wants Card */}
-          <Card className="shadow-xs cursor-pointer hover:border-primary/50 transition-colors" onClick={() => onNavigateTab("wants")}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5 truncate">
-                  <Heart className="size-3.5 shrink-0" />
-                  <span>Хотелки ({calc.pW}%)</span>
-                </CardTitle>
-                <Badge variant="secondary" className="text-[10px] shrink-0">
-                  Остаток: {formatMoney(calc.remWants)}
-                </Badge>
+          <div
+            onClick={() => onNavigateTab("wants")}
+            className="group p-5 rounded-3xl border border-border/80 bg-card hover:border-primary/50 shadow-xs cursor-pointer transition-all duration-200 active:scale-[0.98] space-y-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                <div className="size-6 rounded-lg bg-pink-500/10 text-pink-500 flex items-center justify-center">
+                  <Heart className="size-3.5" />
+                </div>
+                <span>Хотелки ({calc.pW}%)</span>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              <div className="text-xl font-bold tracking-tight font-mono">
+              <Badge variant={calc.remWants < 0 ? "destructive" : "secondary"} className="text-[10.5px] font-mono font-semibold rounded-md">
+                Остаток: {formatMoney(calc.remWants)}
+              </Badge>
+            </div>
+
+            <div>
+              <div className="text-2xl font-extrabold tracking-tight font-mono text-foreground">
                 {formatMoney(calc.allocatedWants)}
               </div>
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                 1-е: {formatMoney(calc.wantsAdv)} · 15-е: {formatMoney(calc.wantsSal)}
               </p>
-              <div className="text-[11px] pt-1 text-muted-foreground flex justify-between border-t border-border/40">
-                <span>Факт куплено:</span>
-                <span className="font-medium text-foreground font-mono">{formatMoney(calc.spentWants)}</span>
+            </div>
+
+            {/* Spend progress bar */}
+            <div className="space-y-1">
+              <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    calc.allocatedWants > 0 && (calc.spentWants / calc.allocatedWants) > 1
+                      ? "bg-destructive"
+                      : (calc.spentWants / calc.allocatedWants) > 0.85
+                        ? "bg-amber-500"
+                        : "bg-pink-500"
+                  )}
+                  style={{ width: `${calc.allocatedWants > 0 ? Math.min(100, Math.round((calc.spentWants / calc.allocatedWants) * 100)) : 0}%` }}
+                />
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-[11px] flex justify-between text-muted-foreground font-mono">
+                <span>Куплено: {formatMoney(calc.spentWants)}</span>
+                <span>{calc.allocatedWants > 0 ? Math.round((calc.spentWants / calc.allocatedWants) * 100) : 0}%</span>
+              </div>
+            </div>
+          </div>
 
           {/* Unplanned Card */}
-          <Card className="shadow-xs cursor-pointer hover:border-primary/50 transition-colors" onClick={() => onNavigateTab("unplanned")}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5 truncate">
-                  <AlertOctagon className="size-3.5 shrink-0" />
-                  <span>Внеплановые ({calc.pU}%)</span>
-                </CardTitle>
-                <Badge variant="secondary" className="text-[10px] shrink-0">
-                  Остаток: {formatMoney(calc.remUnplan)}
-                </Badge>
+          <div
+            onClick={() => onNavigateTab("unplanned")}
+            className="group p-5 rounded-3xl border border-border/80 bg-card hover:border-primary/50 shadow-xs cursor-pointer transition-all duration-200 active:scale-[0.98] space-y-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                <div className="size-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <AlertOctagon className="size-3.5" />
+                </div>
+                <span>Внеплан ({calc.pU}%)</span>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              <div className="text-xl font-bold tracking-tight font-mono">
+              <Badge variant={calc.remUnplan < 0 ? "destructive" : "secondary"} className="text-[10.5px] font-mono font-semibold rounded-md">
+                Остаток: {formatMoney(calc.remUnplan)}
+              </Badge>
+            </div>
+
+            <div>
+              <div className="text-2xl font-extrabold tracking-tight font-mono text-foreground">
                 {formatMoney(calc.allocatedUnplan)}
               </div>
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                 1-е: {formatMoney(calc.unplanAdv)} · 15-е: {formatMoney(calc.unplanSal)}
               </p>
-              <div className="text-[11px] pt-1 text-muted-foreground flex justify-between border-t border-border/40">
-                <span>Факт потрачено:</span>
-                <span className="font-medium text-foreground font-mono">{formatMoney(calc.spentUnplan)}</span>
+            </div>
+
+            {/* Spend progress bar */}
+            <div className="space-y-1">
+              <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    calc.allocatedUnplan > 0 && (calc.spentUnplan / calc.allocatedUnplan) > 1
+                      ? "bg-destructive"
+                      : "bg-amber-500"
+                  )}
+                  style={{ width: `${calc.allocatedUnplan > 0 ? Math.min(100, Math.round((calc.spentUnplan / calc.allocatedUnplan) * 100)) : 0}%` }}
+                />
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-[11px] flex justify-between text-muted-foreground font-mono">
+                <span>Факт: {formatMoney(calc.spentUnplan)}</span>
+                <span>{calc.allocatedUnplan > 0 ? Math.round((calc.spentUnplan / calc.allocatedUnplan) * 100) : 0}%</span>
+              </div>
+            </div>
+          </div>
 
           {/* Savings / Reserve Card */}
-          <Card className="shadow-xs">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5 truncate">
-                  <PiggyBank className="size-3.5 shrink-0" />
-                  <span>Доп. накопления ({calc.pS}%)</span>
-                </CardTitle>
-                <Badge variant="outline" className="text-[10px] text-emerald-600 shrink-0">
-                  Подушка
-                </Badge>
+          <div className="p-5 rounded-3xl border border-border/80 bg-card shadow-xs space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <div className="size-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <PiggyBank className="size-3.5" />
+                </div>
+                <span>Подушка ({calc.pS}%)</span>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              <div className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
+              <Badge variant="outline" className="text-[10.5px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/40 rounded-md">
+                Сбережения
+              </Badge>
+            </div>
+
+            <div>
+              <div className="text-2xl font-extrabold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">
                 {formatMoney(calc.allocatedSave)}
               </div>
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                 1-е: {formatMoney(calc.saveAdv)} · 15-е: {formatMoney(calc.saveSal)}
               </p>
-              <div className="text-[11px] pt-1 text-muted-foreground border-t border-border/40">
-                Откладывается в накопительный фонд
+            </div>
+
+            {/* Steady accumulation visual */}
+            <div className="space-y-1">
+              <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full w-full" />
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-[11px] flex justify-between text-muted-foreground">
+                <span>Неприкосновенный фонд</span>
+                <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">100%</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Financial Goals & Accumulation Card */}
-      <Card className="shadow-xs">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
+      <div className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-border/60 gap-3">
           <div>
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Target className="size-4 text-primary" />
+            <h3 className="text-base sm:text-lg font-bold tracking-tight flex items-center gap-2">
+              <div className="size-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <Target className="size-3.5" />
+              </div>
               Финансовые цели & Накопления
-            </CardTitle>
-            <CardDescription className="text-xs mt-0.5">
-              Суммарный ежемесячный взнос: {formatMoney(calc.totalMonthlyGoals)} (Аванс: {formatMoney(calc.goalsAdvTotal)} | ЗП: {formatMoney(calc.goalsSalTotal)})
-            </CardDescription>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Суммарный взнос: <span className="font-mono font-semibold text-foreground">{formatMoney(calc.totalMonthlyGoals)}</span> (Аванс: <span className="font-mono text-foreground">{formatMoney(calc.goalsAdvTotal)}</span> · ЗП: <span className="font-mono text-foreground">{formatMoney(calc.goalsSalTotal)}</span>)
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {isAdmin && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowSecretGoals(!showSecretGoals)}
-                className="gap-1.5 text-xs h-8"
+                className="gap-1.5 text-xs h-8 rounded-xl border-border/80 hover:bg-accent"
               >
                 {showSecretGoals ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                 {showSecretGoals ? "Скрыть секреты" : "Показать все"}
@@ -566,14 +776,15 @@ export function DashboardView({
                 variant="outline"
                 size="sm"
                 onClick={onOpenEditModal}
-                className="text-xs h-8"
+                className="text-xs h-8 rounded-xl border-border/80 hover:bg-accent"
               >
                 Настроить цели
               </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        <div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {visibleGoals.map((goal) => {
               const months = goal.months && goal.months > 0 ? goal.months : 12
@@ -599,45 +810,48 @@ export function DashboardView({
               return (
                 <div
                   key={goal.id}
-                  className="p-4 rounded-xl border bg-card shadow-xs space-y-3 flex flex-col justify-between"
+                  className="p-4 rounded-2xl border border-border/80 bg-background/60 shadow-xs space-y-3 flex flex-col justify-between hover:border-primary/40 transition-all duration-200"
                 >
                   <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-semibold text-sm flex items-center gap-1.5">
-                          {goal.name}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm tracking-tight flex items-center gap-1.5 truncate">
+                          <span className="truncate">{goal.name}</span>
                           {goal.isSecret && (
-                            <Badge variant="secondary" className="text-[10px] px-1 py-0 flex items-center gap-1">
+                            <Badge variant="secondary" className="text-[9.5px] px-1.5 py-0 flex items-center gap-1 shrink-0 bg-muted/80 rounded-md">
                               <Lock className="size-2.5" />
                               Секрет
                             </Badge>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5 font-mono">
+                        <div className="text-[11.5px] text-muted-foreground mt-0.5 font-mono">
                           {formatMoney(monthly)} / мес · {months} мес
                         </div>
                       </div>
-                      <Badge variant="secondary" className="font-mono text-xs">
+                      <Badge variant={isDone ? "default" : "secondary"} className="font-mono text-xs font-semibold shrink-0 rounded-md">
                         {pct}%
                       </Badge>
                     </div>
 
-                    <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-muted/70 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-foreground h-full rounded-full transition-all duration-500"
+                        className={cn(
+                          "h-full rounded-full transition-all duration-500",
+                          isDone ? "bg-emerald-500" : "bg-primary"
+                        )}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
 
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">Накоплено:</span>
-                      <span className="font-mono font-medium">
-                        {formatMoney(saved)} / {formatMoney(goal.target)}
+                      <span className="text-muted-foreground text-[11px]">Накоплено:</span>
+                      <span className="font-mono font-semibold text-foreground">
+                        {formatMoney(saved)} <span className="text-muted-foreground font-normal">/ {formatMoney(goal.target)}</span>
                       </span>
                     </div>
 
                     {/* Forecast date line */}
-                    <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/50">
+                    <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1.5 border-t border-border/50">
                       <span className="flex items-center gap-1">
                         <Calendar className="size-3 text-primary" />
                         Прогноз:
@@ -652,7 +866,7 @@ export function DashboardView({
                     variant="outline"
                     size="sm"
                     onClick={() => onOpenDepositGoalModal(goal)}
-                    className="w-full text-xs h-7.5 gap-1.5 font-medium hover:bg-primary/5 hover:text-primary hover:border-primary/40 mt-1"
+                    className="w-full text-xs h-8 gap-1.5 font-medium rounded-xl border-border/80 hover:bg-primary/5 hover:text-primary hover:border-primary/40 mt-1 transition-all"
                   >
                     <Plus className="size-3.5" />
                     Внести досрочно
@@ -661,8 +875,8 @@ export function DashboardView({
               )
             })}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

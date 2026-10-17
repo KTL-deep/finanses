@@ -63,7 +63,7 @@ export function getApiBaseUrl(): string {
       window.location.protocol === "capacitor:" ||
       window.location.protocol === "file:")
   ) {
-    return "http://94.154.11.219:3000"
+    return "https://fin.ktl-server.ru"
   }
   return ""
 }

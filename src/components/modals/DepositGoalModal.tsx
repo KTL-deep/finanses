@@ -138,6 +138,7 @@ export function DepositGoalModal({
             <Label className="text-xs">Сумма досрочного взноса (₽)</Label>
             <Input
               type="number"
+              inputMode="decimal"
               placeholder="0"
               value={amountStr}
               onChange={(e) => setAmountStr(e.target.value)}
@@ -155,7 +156,7 @@ export function DepositGoalModal({
                 variant="outline"
                 size="sm"
                 onClick={() => handleQuickAdd(val)}
-                className="h-7 text-xs font-mono"
+                className="h-7 text-xs font-mono active:scale-95 transition-all rounded-lg"
               >
                 +{val >= 1000 ? `${val / 1000}к` : val} ₽
               </Button>
