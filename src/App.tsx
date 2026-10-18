@@ -43,7 +43,6 @@ import { StatsModal } from "@/components/modals/StatsModal"
 import { UserProfileModal } from "@/components/modals/UserProfileModal"
 import { MemoModal } from "@/components/modals/MemoModal"
 import { LoginModal } from "@/components/modals/LoginModal"
-import { RollOverModal } from "@/components/modals/RollOverModal"
 import { DepositGoalModal } from "@/components/modals/DepositGoalModal"
 
 import { checkAuth, getPlan, savePlan, logout, defaultState } from "@/lib/api"
@@ -81,7 +80,6 @@ export default function App() {
   const [statsOpen, setStatsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [memoOpen, setMemoOpen] = useState(false)
-  const [rollOverOpen, setRollOverOpen] = useState(false)
   const [depositGoal, setDepositGoal] = useState<GoalItem | null>(null)
 
   // Dark mode effect
@@ -128,38 +126,6 @@ export default function App() {
       setSyncStatus("synced")
     } else {
       setSyncStatus("error")
-    }
-  }
-
-  // Handle Roll-over execution
-  async function handleApplyRollOver(
-    updatedCurrentMonthState: MonthlyPlanState,
-    nextMonthData?: { month: string; amount: number; phase: "adv" | "sal" }
-  ) {
-    await handleStateUpdate(updatedCurrentMonthState)
-
-    if (nextMonthData && nextMonthData.amount > 0) {
-      const { state: nextState } = await getPlan(nextMonthData.month)
-      const existingIncomes = nextState.incomes || { tAdv: 62000, tSal: 48000, lAdv: 65000, lSal: 30000 }
-      
-      const newNextState: MonthlyPlanState = {
-        ...nextState,
-        incomes: {
-          ...existingIncomes,
-          extraAdv:
-            nextMonthData.phase === "adv"
-              ? (existingIncomes.extraAdv || 0) + nextMonthData.amount
-              : (existingIncomes.extraAdv || 0),
-          extraSal:
-            nextMonthData.phase === "sal"
-              ? (existingIncomes.extraSal || 0) + nextMonthData.amount
-              : (existingIncomes.extraSal || 0),
-        },
-        goals: updatedCurrentMonthState.goals || nextState.goals,
-        groceryTags: updatedCurrentMonthState.groceryTags || nextState.groceryTags,
-        wantsTags: updatedCurrentMonthState.wantsTags || nextState.wantsTags,
-      }
-      await savePlan(nextMonthData.month, newNextState)
     }
   }
 
@@ -408,7 +374,6 @@ export default function App() {
                     onOpenStatsModal={() => setStatsOpen(true)}
                     onOpenTBankModal={() => setTbankImportOpen(true)}
                     onOpenMemoModal={() => setMemoOpen(true)}
-                    onOpenRollOverModal={() => setRollOverOpen(true)}
                     onOpenDepositGoalModal={(g) => setDepositGoal(g)}
                     onNavigateTab={(tab) => setActiveTab(tab)}
                   />
@@ -559,14 +524,6 @@ export default function App() {
         onOpenChange={setMemoOpen}
         state={planState}
         onSave={handleStateUpdate}
-      />
-
-      <RollOverModal
-        open={rollOverOpen}
-        onOpenChange={setRollOverOpen}
-        currentMonth={selectedMonth}
-        state={planState}
-        onApply={handleApplyRollOver}
       />
 
       <DepositGoalModal

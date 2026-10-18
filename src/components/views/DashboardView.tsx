@@ -21,7 +21,6 @@ import {
   AlertOctagon,
   PiggyBank,
   Lock,
-  ArrowRightLeft,
   Calendar,
   Plus,
 } from "lucide-react"
@@ -49,7 +48,6 @@ interface DashboardViewProps {
   onOpenStatsModal: () => void
   onOpenTBankModal: () => void
   onOpenMemoModal: () => void
-  onOpenRollOverModal: () => void
   onOpenDepositGoalModal: (goal: GoalItem) => void
   onNavigateTab: (tab: string) => void
 }
@@ -63,7 +61,6 @@ export function DashboardView({
   onOpenStatsModal,
   onOpenTBankModal,
   onOpenMemoModal,
-  onOpenRollOverModal,
   onOpenDepositGoalModal,
   onNavigateTab,
 }: DashboardViewProps) {
@@ -155,20 +152,6 @@ export function DashboardView({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenRollOverModal}
-            className="text-xs h-9 px-3.5 gap-2 border-emerald-500/40 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold rounded-xl transition-all shadow-xs"
-          >
-            <ArrowRightLeft className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Перенос остатков</span>
-            {(Math.max(0, calc.remGroc) + Math.max(0, calc.remWants) + Math.max(0, calc.remUnplan)) > 0 && (
-              <Badge variant="secondary" className="ml-0.5 px-1.5 py-0 text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-md">
-                +{formatMoney(Math.max(0, calc.remGroc) + Math.max(0, calc.remWants) + Math.max(0, calc.remUnplan))}
-              </Badge>
-            )}
-          </Button>
           <Button
             variant="outline"
             size="sm"
