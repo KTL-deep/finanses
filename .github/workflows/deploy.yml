@@ -49,9 +49,10 @@ jobs:
           test -n "$SSH_PRIVATE_KEY" || { echo "VPS_SSH_KEY is not configured"; exit 1; }
           test -n "$SSH_HOST_KEY" || { echo "VPS_HOST_KEY is not configured"; exit 1; }
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+          ssh-keygen -y -P '' -f ~/.ssh/deploy_key > /dev/null || { echo "VPS_SSH_KEY must contain a complete unencrypted private SSH key"; exit 1; }
+          printf '%s\n' "$SSH_HOST_KEY" | tr -d '\r' > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
       - name: Pull changes and restart Docker Compose
@@ -66,7 +67,7 @@ jobs:
           PORT="${VPS_PORT:-22}"
           DEPLOY_PATH="${VPS_PATH:-/root/finanses}"
 
-          ssh -i ~/.ssh/deploy_key -p "$PORT" "$VPS_USER@$VPS_HOST" \
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -p "$PORT" "$VPS_USER@$VPS_HOST" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
           set -euo pipefail
           cd "$DEPLOY_PATH"
