@@ -13,7 +13,7 @@
     "start": "node server.js",
     "cap:sync": "npm run build && cap sync android",
     "cap:open": "cap open android",
-    "build:apk": "npm run cap:sync && cmd /c \"set JAVA_HOME=C:\\Program Files\\Microsoft\\jdk-21.0.12.8-hotspot& set PATH=C:\\Program Files\\Microsoft\\jdk-21.0.12.8-hotspot\\bin;%PATH%& cd android& gradlew.bat assembleDebug\""
+    "build:apk": "npm run cap:sync && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

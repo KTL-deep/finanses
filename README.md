@@ -57,6 +57,20 @@
 
 ---
 
+## 📱 Сборка Android APK (Windows)
+
+Для сборки нужны JDK 21 (`JAVA_HOME`) и Android SDK с платформой Android 36. В `android/local.properties` задайте `sdk.dir` — путь к SDK на вашем компьютере. После установки инструментов откройте новый терминал.
+
+```bash
+npm run build:apk
+```
+
+Готовый установочный файл: `android/app/build/outputs/apk/debug/app-debug.apk`. Это отладочная сборка для прямой установки, не для публикации в Google Play. Минимальная версия — Android 7.0.
+
+Приложение по умолчанию подключается к `https://fin.ktl-server.ru`; адрес можно изменить на экране входа.
+
+---
+
 ## 🐳 Деплой и обновление на VPS (через Docker)
 
 ### Первоначальный запуск
