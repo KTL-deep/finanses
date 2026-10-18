@@ -71,6 +71,23 @@ npm run build:apk
 
 ---
 
+## 🤖 GitHub Actions
+
+При пуше в `main` и по ручному запуску (`workflow_dispatch`) работают два независимых процесса:
+
+- `.github/workflows/deploy.yml` проверяет сборку и обновляет VPS через SSH и Docker Compose. Создайте GitHub environment `production` и secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (приватный SSH-ключ), `VPS_HOST_KEY` (строка `known_hosts` с **заранее проверенным другим способом** отпечатком SSH-ключа сервера; не доверяйте слепо выводу `ssh-keyscan`). Необязательные secrets: `VPS_PORT` (по умолчанию `22`) и `VPS_PATH` (по умолчанию `/root/finanses`). На VPS нужны Docker Compose, доступ к репозиторию на чтение для `git pull` и публичный ключ от `VPS_SSH_KEY` в `authorized_keys` пользователя `VPS_USER`.
+- `.github/workflows/android.yml` собирает подписанный отладочный APK. Добавьте GitHub secret `ANDROID_DEBUG_KEYSTORE_BASE64` из **существующего** локального `%USERPROFILE%\.android\debug.keystore`. В PowerShell на компьютере с исходным ключом скопируйте значение в буфер обмена (не выводите в терминал):
+
+  ```powershell
+  Set-Clipboard ([Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\.android\debug.keystore")))
+  ```
+
+  Сохраните резервную копию ключа вне репозитория: без него обновление установленного приложения тем же ключом невозможно. Никогда не коммитьте ключ или его Base64. Готовый файл скачайте в GitHub → Actions → запуск **Build Android APK** → Artifacts → `finanses-android-debug`, распакуйте архив и установите `app-debug.apk` на телефон. Это debug APK для прямой установки, не релиз для Google Play.
+
+Оба процесса начнут работать после настройки secrets и пуша в `main` (либо ручного запуска).
+
+---
+
 ## 🐳 Деплой и обновление на VPS (через Docker)
 
 ### Первоначальный запуск
